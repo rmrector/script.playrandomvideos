@@ -61,6 +61,7 @@ def main():
     if len(sys.argv) == 1:
         log("Play Random Items: 'RunScript(script.playrandom, \"FolderPath\")'")
         return
+    # TODO: Show a loading indicator
     # sys.argv[0] is script name
     path = sys.argv[1].decode("utf-8")
     randomPlayer.playRandomFromFolderPath(path)

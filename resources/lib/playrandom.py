@@ -33,48 +33,40 @@ def log(message, logToGui=True, level=xbmc.LOGDEBUG):
 class Player:
     def __init__(self):
         self.LIMIT = 100
-        self.tvshowTitlesPath = "videodb://tvshows/titles"
+        self.tvshowTitlesPath = "videodb://tvshows/titles/"
 
 
     def playRandomFromFolderPath(self, path):
         log("Looking for path: %s" % path)
 
-        playlistExtension = ".xsp"
+        playlistExtension = ".xsp" # or .m3u, .pls
         if (path.startswith(self.tvshowTitlesPath)):
-            self.playTvShow(path)
+            self._playTvShow(path)
         elif(path.endswith(playlistExtension)):
-            playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
-            playlist.clear()
-            playlistLoaded = False
-
             playlistXml = xbmcvfs.File(path, 'r')
             playlistXml = playlistXml.read()
             playlistXml = ET.fromstring(playlistXml)
-            if playlistXml.tag == 'smartplaylist' and 'type' in playlistXml.attrib and playlistXml.attrib['type'] == 'episodes':
-                episodeIds = xbmcvfs.listdir(path)[1]
-                for episodeId in episodeIds:
-                    jsonRequest = {"jsonrpc": "2.0", "method": "VideoLibrary.GetEpisodeDetails", "id": 1}
-                    jsonRequest["params"] = {"episodeid": int(episodeId), "properties": ["file"]}
-                    episode = json.loads(xbmc.executeJSONRPC(json.dumps(jsonRequest)))
-                    episode = episode["result"]["episodedetails"]
-                    listItem = xbmcgui.ListItem(episode["label"])
-                    playlist.add(episode["file"], listItem)
-                    print episode["label"]
-                playlistLoaded = True
+
+            if playlistXml.tag != 'smartplaylist':
+                log("Playlists other than smart playlists are not supported. '%s'" % path)
+                return
+            if 'type' not in playlistXml.attrib:
+                log("A playlist without a type confuses me! '%s'" % path)
+                return
+
+            playlistType = playlistXml.attrib['type']
+
+            if playlistType == 'episodes':
+                self._playEpisodePlaylist(path)
             else:
-                log("[context.playrandom] Unsupported playlist! '%s'" % path)
-
-            if playlistLoaded:
-                playlist.shuffle()
-                log("[context.playrandom] Successfully random'd '%s'" % path)
-                xbmc.Player().play(playlist)
+                log("Unsupported playlist type '%s' for path '%s'" % (playlistType, playlistType))
         else:
-            log("[context.playrandom] Unsupported path! %s" % path)
+            log("Unsupported path! %s" % path)
 
 
-    def playTvShow(self, path):
+    def _playTvShow(self, path):
         originalPath = path
-        path = path[len(self.tvshowTitlesPath) + 1:].split('?')[0].split('/')
+        path = path[len(self.tvshowTitlesPath):].split('?')[0].split('/')
 
         tvshowId = path[0]
         season = path[1] if len(path) > 1 else None
@@ -98,6 +90,24 @@ class Player:
                 playlist.add(episode["file"], listItem)
 
             xbmc.Player().play(playlist)
-            log("[context.playrandom] Successfully random'd '%s'" % originalPath)
+            log("Successfully random'd '%s'" % originalPath)
         else:
-            log("[context.playrandom] Couldn't find any episodes to random")
+            log("Couldn't find any episodes to random")
+
+
+    def _playEpisodePlaylist(self, path):
+        playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+        playlist.clear()
+
+        episodeIds = xbmcvfs.listdir(path)[1]
+        for episodeId in episodeIds:
+            jsonRequest = {"jsonrpc": "2.0", "method": "VideoLibrary.GetEpisodeDetails", "id": 1}
+            jsonRequest["params"] = {"episodeid": int(episodeId), "properties": ["file"]}
+            episode = json.loads(xbmc.executeJSONRPC(json.dumps(jsonRequest)))
+            episode = episode["result"]["episodedetails"]
+            listItem = xbmcgui.ListItem(episode["label"])
+            playlist.add(episode["file"], listItem)
+
+        playlist.shuffle()
+        log("Successfully random'd '%s'" % path)
+        xbmc.Player().play(playlist)
