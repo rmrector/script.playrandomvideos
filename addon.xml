@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="script.playrandom" name="Play Random Items" version="0.0.1" provider-name="rmrector">
+	<requires>
+		<import addon="xbmc.python" version="2.20.0" />
+		<import addon="script.design.helper" version="0.0.1" /> <!-- This really needs to be optional -->
+	</requires>
+	<extension point="xbmc.python.library" library="script.py" />
+	<!-- ? 'module' to use in Python directly -->
+	<extension point="xbmc.addon.metadata">
+		<language/>
+		<summary lang="en">Plays random items</summary>
+		<description lang="en">This script plays random items from various types of lists.
+			Works on TV Shows/Seasons/Episode smart playlists, should work on Movie Sets/Genres/Music, other playlists. Search/Filter from the left hand side seems unlikely/precarious.</description>
+		<disclaimer lang="en">This add-on does not add functionality is used by skins or other add-ons, such as the 'Play Random Items menu item' add-on.</disclaimer>
+		<platform>all</platform>
+	</extension>
+</addon>
