@@ -39,14 +39,14 @@ try:
     # logger = visuallogger.Logger()
     xbmcaddon.Addon('script.design.helper')
     loggerInstalled = True
-except ExplicitException:
+except:
     # logger = None
     loggerInstalled = False
 
 LIMIT = 100
 tvshowTitlesPath = "videodb://tvshows/titles/" # Frig. This can also not end with a slash /
 
-def log(message, logToGui=True, level=xbmc.LOGDEBUG):
+def log(message, level=xbmc.LOGDEBUG, logToGui=True):
     if loggerInstalled:
         # Yeah, this is ugly, so def want it to be a module
         builtin = "RunScript(script.design.helper, log, %s, \"%s\"" % (__addonid__, message)
@@ -59,12 +59,12 @@ def log(message, logToGui=True, level=xbmc.LOGDEBUG):
 
 def main():
     if len(sys.argv) == 1:
-        log("Play Random Items: 'RunScript(script.playrandom, \"FolderPath\")'")
+        log("Play Random Items: 'RunScript(script.playrandom, \"(Container, ListItem).FolderPath\")'")
         return
     # TODO: Show a loading indicator
     # sys.argv[0] is script name
-    path = sys.argv[1].decode("utf-8")
-    randomPlayer.playRandomFromFolderPath(path)
+    fullUrl = sys.argv[1].decode("utf-8")
+    randomPlayer.playRandomFromFullUrl(fullUrl)
 
 if __name__ == '__main__':
     main()
