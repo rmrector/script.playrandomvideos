@@ -7,161 +7,253 @@ import xbmcvfs
 
 import xml.etree.ElementTree as ET
 
+from random import shuffle
+
 try:
     # import visuallogger
     # logger = visuallogger.Logger()
     xbmcaddon.Addon('script.design.helper')
-    loggerInstalled = True
+    logger_installed = True
 except:
     # logger = None
-    loggerInstalled = False
+    logger_installed = False
 
 __addonid__ = 'script.playrandom'
 
-
-def log(message, level=xbmc.LOGDEBUG, logToGui=True):
-    if loggerInstalled:
+def log(message, level=xbmc.LOGDEBUG, log_to_gui=True):
+    if logger_installed:
         # Yeah, this is ugly, so def want it to be a module
-        builtin = 'RunScript(script.design.helper, log, %s, "%s"' % (__addonid__, message)
-        if logToGui:
+        # Also, it chokes on messages that have double-quotes and commas
+        builtin = 'RunScript(script.design.helper, log, %s, "%s"' % (__addonid__, str(message).replace('"', '\''))
+        if log_to_gui:
             builtin += ', logToGui'
         builtin += ')'
-        xbmc.executebuiltin(builtin)
+        xbmc.executebuiltin(builtin.encode('utf-8'))
     else:
-        xbmc.log('[%s] %s' % (__addonid__, message), level)
+        xbmc.log('[%s] %s' % (__addonid__, str(message).encode('utf-8')), level)
 
+def library_path(path):
+    db_path = path.split('//')[1].split("?", 1)
+    query = urllib.unquote(db_path[1]) if len(db_path) > 1 else None
+    db_path = db_path[0].rstrip('/').split('/')
+
+    return {'db_path': db_path, 'query': query}
+
+def episode(json_episode):
+    return {'label': json_episode["label"], 'file': json_episode["file"]}
+
+def wait():
+    xbmc.sleep(100)
+
+def play(episode_list):
+    playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+    playlist.clear()
+    for episode in episode_list:
+        list_item = xbmcgui.ListItem(episode['label'].encode('utf-8'))
+        playlist.add(episode['file'].encode('utf-8'), list_item)
+
+    xbmc.Player().play(playlist)
 
 class Player:
     def __init__(self):
-        self.playlistLimitLength = 100
+        self.playlist_limit_length = 2
         # special should probably be handled by a file handler or whatever
-        self.videoDatabasePrefix = "videodb://"
-        self.playlistSuffix = ".xsp"
-        self.tvshowLibrary = 'tvshows'
+        self.video_database_prefix = "videodb://"
+        self.playlist_suffix = ".xsp"
+        self.tvshow_library = 'tvshows'
+        self.movie_library = 'movies'
 
 
-    def playRandomFromFullUrl(self, path):
-        if path.startswith(self.videoDatabasePrefix):
-            self._playRandomFromVideoDb(path)
-        elif path.endswith(self.playlistSuffix):
-            self._playRandomFromPlaylist(path)
+    def play_random_from_full_url(self, path):
+        if path.startswith(self.video_database_prefix):
+            self._play_random_from_video_db(path)
+        elif path.endswith(self.playlist_suffix):
+            self._play_random_from_playlist(path)
         else:
             log("Unsupported path %s" % path, xbmc.LOGNOTICE)
 
+        # 'Files.GetDirectory' will give me a decent list of just about every container, but it does still have some problems:
+        # - It often returns a list of stuff that can't be random'd directly, like seasons, albums, or TV shows.
+        #  - For lists like these, they need to be listed themselves, their contents concat'd, and then random that list
+        #   - The type of info to request is also unknown until we can see what is inside of it
+        #  - Or parse the path and file (if an xsp) to see what it's a list of
+        #   - If it's going to be a list of items that are unplayable directly, then build a new path that describes what is wanted, if possible (if an artist is selected, add '-1' as the album to get all songs, or for a tv show set the season to '-1')
+        #   - If not possible, maybe a playlist that searches for tv shows, then cache the IDs returned from GetDirectory, and build new requests to GetDirectory to ge the listing for each, add them all together and shuffle
+        #   - This should also give me enough info to decide what type of info I need, episode/movie/song
+        #   - But it seems like it will perform worse than 'VideoLibrary.GetEpisodes' for playing episodes from all files
+        #  - Or request all of the info I would need for any type, and just ignore data that I don't need
+        # - Seasons are viewed with the file as a filesystem file/directory, not a videodb:// path I can use. !! But hey, musicdb albums do have a musicdb:// path
+        # - The property 'streamdetails' doesn't ever seem to be populated
+        # - It ignores the query. Which is probably a good thing, since the query is built improperly anyway
+        # - There is no way to limit it, so the list must be trimmed afterward
 
-    def _playRandomFromVideoDb(self, path):
-        # Hey, maybe I could turn this into a dictionary
-        dbPath = path[len(self.videoDatabasePrefix):].split("?", 1)
-        query = urllib.unquote(dbPath[1]) if len(dbPath) > 1 else None
-        dbPath = dbPath[0].rstrip('/').split('/')
+        # TV show: Lists season, including '* All seasons', but only if there is more than one season
+        # - 'type' of items is Unknown
+        # TV show - season: lists episodes in season. '-1' is all episodes, '0' is specials
+        # - 'type' of items is episode
+        # TV show - <category>: lists category IDs, 'type' is unknown
+        # TV show - <category> - <category ID>: list matching TV shows, 'type' is tvshow
 
-        pathLen = len(dbPath)
-        if pathLen < 1: # Just "videodb://"
+        # episode playlist: lists episodes in playlist
+        # - 'type' of items is episode
+
+        # "Player.Open" on any library path tries to open everything in the picture slideshow viewer, but only succeeds in grabbing a frame from a video. Maybe the first frame from the first video
+        # - on a playlist it does the same thing. Doesn't work
+        # - on a file folder it works, but it go through the slideshow viewer. The slideshow viewer pops up for a moment, the sees that the first item is a video so pops up the video player. In betweeen items the slideshow pops in very briefly, and when stopped, it keeps the slideshow fullscreen with a gigantic play button on it. This also means that the play queue only contains the one item that the slideshow viewer parses out to play.
+        # - Just not useable
+
+
+    def _play_random_from_video_db(self, path):
+        # based on GetDirectory
+        _path = library_path(path)['db_path']
+        if not _path:
             log("Unsupported Video DB path '%s'. Investigate if there is a query." % path, xbmc.LOGNOTICE)
-            return
-        library = dbPath[0] # movies/tvshows/musicvideos, annoyingly also recentlyadded(movies, episodes, musicvideos)
+        library = _path[0]
+        _path = None
 
-        category = dbPath[1] if pathLen > 1 else None
-        if category == 'titles':
-            categoryId = None
-            _i = 2
-        else:
-            categoryId = dbPath[2] if pathLen > 2 else None
-            _i = 3
-
-        tvshowId = dbPath[_i] if pathLen > _i else None
-        season = dbPath[_i + 1] if pathLen > (_i + 1) else None
-        movieId = dbPath[_i] if pathLen > _i else None
-
-        if library == self.tvshowLibrary:
-            if not tvshowId and categoryId:
-                log("Want to play episodes from '%s=%s'. But I don't know how." % (category, categoryId))
-            else:
-                self._playRandomTvEpisode(tvshowId, season, query)
+        if library == self.tvshow_library:
+            self._play_random_tv_episodes_by_path(path)
         else:
             log("Unsupported Video DB path '%s'." % path, xbmc.LOGNOTICE)
 
-        # From context.playrandom, which passes along ListItem.FolderPath from the context menu, dbPath and query can be goofy
-        # a simple 'dbPath' like 'tvshows/titles/<tvshowid>[/<season>[/episodeid]]' is clear enough
-        # - also the head of sub-sections are fine; 'tvshows/genres/<genreid>'
-        # - but going deeper 'tvshows/genres/<genreid>/<tvshowid>/<season>/<episodeid>' gets a bit murky
-        # - But! to turn this guy back in to what is clear, just replace 'genres/<genreid>' with 'titles'
-        #  - We only really expect the genre selection to apply to the TV show itself, then list all seasons and episodes contained within
-        #  - Ditto years/actors/studios/tags
-        # 'query' is very icky. It looks acceptable, but it does not always accurately describe either the ListItem or its Container.
-        # - Most of the time, it is simply in the reverse order of the path used to get to the Container of the ListItem, rather than the ListItem itself
-        #  - The query for 'tvshows/year/<year>/<tvshowid>/<season>/<episodeid>' is 'season=<season>&tvshowid=<tvshowid>&year=<year>'
-        #  - even when the selected season/episode ListItem aired in a different year, the <year> selected when navigating is displayed
-        #  - even when the Container aired in a different year (or doesn't have an associated year), the year is displayed, with the wrong value
-        # - Rarely it does actually describe the ListItem itself
-        #  - ListItem 'movies/sets/<setid>' is the one culprit, and has a query of 'setid=<setid>'
-        # - Sometimes it also includes an 'xsp' query, which is JSON that describes more of the Container's info, such as sort, filter
-        #  - This seems to happen when navigating from the virtual library directory tree, rather than when accessed with a 'videodb://tvshows/titles/' URL.
-        #  - A ListItem inside of a smart playlist it fully describes the rules the smart playlist is built with
-        #  - In Progress TV Shows path is a nice 'tvshows/titles/<tvshowid>' and the xsp is a filter for inprogress
-        # path = 'tvshows/year/<year>/<tvshowid>/<season>/<episodeid>' query = 'season=<season>&tvshowid=<tvshowid>&year=<year>' : ICK
-        # KODI--: This is just... an important API with an unpleasant design
-        # KODI-ODD: sometimes dbPath has a slash at the end and sometimes it does not
 
-    def _playRandomTvEpisode(self, tvshowId=None, season=None, query=None):
-        method_args = "(tvshowId=%s, season=%s)" % (str(tvshowId), str(season))
-        jsonRequest = {"jsonrpc": "2.0", "method": "VideoLibrary.GetEpisodes", "id": 1,
-            "params": {"properties": ["file"], "sort": {"method": "random"}, "limits": {"end": self.playlistLimitLength}}}
+    def _play_random_tv_episodes_by_path(self, path):
+        db_path = library_path(path)['db_path']
+        path_len = len(db_path)
 
-        if tvshowId:
-            jsonRequest["params"]["tvshowid"] = int(tvshowId)
-        if season:
-            jsonRequest["params"]["season"] = int(season)
+        category = db_path[1] if path_len > 1 else None
+        if category == 'titles':
+            tvshow_id = db_path[2] if path_len > 2 else None
+            season = db_path[3] if path_len > 3 else None
+            self._play_random_tv_episodes(tvshow_id, season)
+        else: # genres/years/actors/studios/tags
+            if path_len < 3: # No category_id
+                self._play_random_tv_episodes()
+            elif path_len == 3:
+                categoryId = db_path[2]
+                self._play_random_tv_episodes_from_category(category, categoryId)
+            else:
+                # With a TV show selected we just ignore the initial filter, it was only meant to filter the TV show selection
+                tvshow_id = db_path[3] if path_len > 2 else None
+                season = db_path[4] if path_len > 3 else None
+                self._play_random_tv_episodes(tvshow_id, season)
 
-        jsonEpisodes = xbmc.executeJSONRPC(json.dumps(jsonRequest))
-        jsonEpisodes = json.loads(jsonEpisodes)
 
-        if len(jsonEpisodes["result"]["episodes"]):
-            playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
-            playlist.clear()
-            for episode in jsonEpisodes["result"]["episodes"]:
-                listItem = xbmcgui.ListItem(episode["label"])
-                playlist.add(episode["file"], listItem)
+    def _play_random_tv_episodes(self, tvshow_id=None, season=None):
+        random_episodes = self._get_random_tv_episodes(tvshow_id, season)
 
-            xbmc.Player().play(playlist)
-            log("Successfully started playing random episodes with %s" % method_args, xbmc.LOGDEBUG)
+        _method_args = "(tvshow_id=%s, season=%s)" % (str(tvshow_id), str(season))
+        if random_episodes:
+            play(random_episodes)
+            log("Successfully started playing random episodes with %s" % _method_args, xbmc.LOGDEBUG)
         else:
-            log("Didn't find any episodes with %s" % method_args, xbmc.LOGNOTICE)
+            log("Didn't find any episodes with %s" % _method_args, xbmc.LOGNOTICE)
 
 
-    def _playRandomFromPlaylist(self, path):
-        playlistXml = xbmcvfs.File(path, 'r')
-        playlistXml = playlistXml.read()
-        playlistXml = ET.fromstring(playlistXml)
+    def _play_random_tv_episodes_from_category(self, category, category_id):
+        category_lookup = {
+            'genres': 'genreid',
+            'years': 'year',
+            'actors': 'actor',
+            'studios': 'studio',
+            'tags': 'tag'}
+        category = category_lookup[category]
 
-        if playlistXml.tag != 'smartplaylist':
+        if category == 'genreid' or category == 'year':
+            category_id = int(category_id)
+
+        json_request = {'jsonrpc': '2.0', 'method': 'VideoLibrary.GetTVShows', 'id': 1,
+            'params': {'filter':{category: category_id}}}
+
+        json_tvshows = xbmc.executeJSONRPC(json.dumps(json_request).encode('utf-8')).decode('utf-8')
+        json_tvshows = json.loads(json_tvshows)
+
+        _method_args = "(category=%s, category_id=%s)" % (str(category), str(category_id))
+        if json_tvshows['result']['tvshows']:
+            random_episodes = []
+            for tvshow in json_tvshows['result']['tvshows']:
+                random_episodes.extend(self._get_random_tv_episodes(tvshow['tvshowid']))
+            shuffle(random_episodes)
+
+            play(random_episodes)
+            log("Successfully started playing random episodes with %s" % _method_args, xbmc.LOGDEBUG)
+        else:
+            log("Didn't find any episodes with %s" % _method_args, xbmc.LOGNOTICE)
+
+
+    def _get_random_tv_episodes(self, tvshow_id=None, season=None):
+        json_request = {"jsonrpc": "2.0", "method": "VideoLibrary.GetEpisodes", "id": 1,
+            "params": {"properties": ["file"], "sort": {"method": "random"}, "limits": {"end": self.playlist_limit_length}}}
+
+        if tvshow_id:
+            json_request["params"]["tvshowid"] = int(tvshow_id)
+            if season:
+                json_request["params"]["season"] = int(season)
+
+        json_episodes = xbmc.executeJSONRPC(json.dumps(json_request).encode('utf-8')).decode('utf-8')
+        json_episodes = json.loads(json_episodes)
+
+        if json_episodes["result"]["episodes"]:
+            return [episode(json_episode) for json_episode in json_episodes["result"]["episodes"]]
+        else:
+            _method_args = "(tvshow_id=%s, season=%s)" % (str(tvshow_id), str(season))
+            log("Didn't find any episodes with %s" % _method_args, xbmc.LOGNOTICE)
+
+
+    # From context.playrandom, which passes along ListItem.FolderPath from the context menu, db_path and query can be goofy
+    # a simple 'db_path' like 'tvshows/titles/<tvshowid>[/<season>[/episodeid]]' is clear enough
+    # - also the head of sub-sections are fine; 'tvshows/genres/<genreid>'
+    # - but going deeper 'tvshows/genres/<genreid>/<tvshowid>/<season>/<episodeid>' gets a bit murky
+    # - But! to turn this guy back in to what is clear, just replace 'genres/<genreid>' with 'titles'
+    #  - We only really expect the genre selection to apply to the TV show itself, then list all seasons and episodes contained within
+    #  - Ditto years/actors/studios/tags
+    # 'query' is very icky. It looks acceptable, but it does not always accurately describe either the ListItem or its Container.
+    # - Most of the time, it is simply in the reverse order of the path used to get to the Container of the ListItem, rather than the ListItem itself
+    #  - The query for 'tvshows/year/<year>/<tvshowid>/<season>/<episodeid>' is 'season=<season>&tvshowid=<tvshowid>&year=<year>'
+    #  - even when the selected season/episode ListItem aired in a different year, the <year> selected when navigating is displayed
+    #  - even when the Container aired in a different year (or doesn't have an associated year), the year is displayed, with the wrong value
+    # - Rarely it does actually describe the ListItem itself
+    #  - ListItem 'movies/sets/<setid>' is the one culprit, and has a query of 'setid=<setid>'
+    # - Sometimes it also includes an 'xsp' query, which is JSON that describes more of the Container's info, such as sort, filter
+    #  - This seems to happen when navigating from the virtual library directory tree, rather than when accessed with a 'videodb://tvshows/titles/' URL.
+    #  - A ListItem inside of a smart playlist it fully describes the rules the smart playlist is built with
+    #  - In Progress TV Shows path is a nice 'tvshows/titles/<tvshowid>' and the xsp is a filter for inprogress
+    # path = 'tvshows/year/<year>/<tvshowid>/<season>/<episodeid>' query = 'season=<season>&tvshowid=<tvshowid>&year=<year>' : ICK
+    # KODI--: This is just... an important API with an unpleasant design
+    # KODI-ODD: sometimes db_path has a slash at the end and sometimes it does not
+
+
+    def _play_random_from_playlist(self, path):
+        playlist_xml = xbmcvfs.File(path.encode('utf-8'), 'r')
+        playlist_xml = playlist_xml.read()
+        playlist_xml = ET.fromstring(playlist_xml)
+
+        if playlist_xml.tag != 'smartplaylist':
             log("Playlists other than smart playlists are not supported. '%s'" % path, xbmc.LOGNOTICE)
             return
-        if 'type' not in playlistXml.attrib:
+        if 'type' not in playlist_xml.attrib:
             log("Playlists without a type are not supported. '%s'" % path, xbmc.LOGNOTICE)
             return
 
-        playlistType = playlistXml.attrib['type']
-
-        if playlistType == 'episodes':
-            self._playEpisodePlaylist(path)
+        playlist_type = playlist_xml.attrib['type']
+        if playlist_type == 'episodes':
+            self._play_episode_playlist(path)
         else:
-            log("Unsupported playlist type '%s' for path '%s'" % (playlistType, path), xbmc.LOGNOTICE)
+            log("Unsupported playlist type '%s' for path '%s'" % (playlist_type, path), xbmc.LOGNOTICE)
 
 
-    def _playEpisodePlaylist(self, path):
-        playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
-        playlist.clear()
+    def _play_episode_playlist(self, path):
+        json_request = {'jsonrpc': '2.0', 'method': 'Files.GetDirectory', 'id': 1,
+            'params': {'directory': path}}
+        json_episodes = json.loads(xbmc.executeJSONRPC(json.dumps(json_request).encode('utf-8')).decode('utf-8'))
 
-        episodeIds = xbmcvfs.listdir(path)[1]
-        for episodeId in episodeIds:
-            jsonRequest = {"jsonrpc": "2.0", "method": "VideoLibrary.GetEpisodeDetails", "id": 1,
-                           "params": {"episodeid": int(episodeId), "properties": ["file"]}}
-            episode = json.loads(xbmc.executeJSONRPC(json.dumps(jsonRequest)))
-            episode = episode["result"]["episodedetails"]
-            listItem = xbmcgui.ListItem(episode["label"])
-            playlist.add(episode["file"], listItem)
-
-        playlist.shuffle()
-        log("Successfully started playing random episodes from '%s'" % path, xbmc.LOGDEBUG)
-        xbmc.Player().play(playlist)
+        if json_episodes["result"]["files"]:
+            random_episodes = [episode(json_episode) for json_episode in json_episodes["result"]["files"]]
+            shuffle(random_episodes)
+            random_episodes = random_episodes[:self.playlist_limit_length]
+            log(random_episodes)
+            wait()
+            play(random_episodes)
+            log("Successfully started playing random episodes with '%s'" % path, xbmc.LOGDEBUG)
+        else:
+            log("Didn't find any episodes with '%s'" % path, xbmc.LOGNOTICE)
