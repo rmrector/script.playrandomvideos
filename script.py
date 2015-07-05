@@ -31,16 +31,14 @@ __lib__ = xbmc.translatePath(os.path.join(__addonpath__, 'resources', 'lib')).de
 
 sys.path.append(__lib__)
 
-import playrandom
-random_player = playrandom.Player()
+from playrandom import RandomPlayer
+random_player = RandomPlayer()
 
+#from devhelper import log
 try:
-    # import visuallogger
-    # logger = visuallogger.Logger()
     xbmcaddon.Addon('script.design.helper')
     logger_installed = True
 except:
-    # logger = None
     logger_installed = False
 
 def log(message, level=xbmc.LOGDEBUG, log_to_gui=True):
@@ -48,7 +46,7 @@ def log(message, level=xbmc.LOGDEBUG, log_to_gui=True):
         # Yeah, this is ugly, so def want it to be a module
         builtin = 'RunScript(script.design.helper, log, %s, "%s"' % (__addonid__, message)
         if log_to_gui:
-            builtin += ', log_to_gui'
+            builtin += ', logToGui'
         builtin += ')'
         xbmc.executebuiltin(builtin.encode('utf-8'))
     else:
@@ -56,12 +54,15 @@ def log(message, level=xbmc.LOGDEBUG, log_to_gui=True):
 
 def main():
     if len(sys.argv) == 1:
-        log("Play Random Items: 'RunScript(script.playrandom, \"(Container, ListItem).FolderPath\")'")
+        log("Play Random Items: 'RunScript(script.playrandom, \"(Container, ListItem).FolderPath\", [video/music/pictures])'")
         return
     # TODO: Show a loading indicator
 
     full_url = sys.argv[1].decode("utf-8")
-    random_player.play_random_from_full_url(full_url)
+    if len(sys.argv) > 2:
+        random_player.play_random_from_full_url(full_url, sys.argv[2])
+    else:
+        random_player.play_random_from_full_url(full_url)
 
 if __name__ == '__main__':
     main()

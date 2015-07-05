@@ -11,6 +11,7 @@ from random import shuffle
 
 from episode import Episode
 from movie import Movie
+from video import Video
 # from devhelper import log
 
 try:
@@ -25,11 +26,11 @@ def log(message, level=xbmc.LOGDEBUG, log_to_gui=True):
     if logger_installed:
         # Yeah, this is ugly, so def want it to be a module
         # Also, it may choke on messages that have double-quotes and commas
-        builtin = 'RunScript(script.design.helper, log, %s, "%s"' % (__addonid__, str(message).replace('"', '\''))
+        builtin = 'RunScript(script.design.helper, log, %s, "%s"' % (__addonid__, str(message).replace('"', '\'').encode('utf-8'))
         if log_to_gui:
-            builtin += ', log_to_gui'
+            builtin += ', logToGui'
         builtin += ')'
-        xbmc.executebuiltin(builtin.encode('utf-8'))
+        xbmc.executebuiltin(builtin)
     else:
         xbmc.log('[%s] %s' % (__addonid__, str(message).encode('utf-8')), level)
 
@@ -43,20 +44,20 @@ def library_path(path):
 def wait():
     xbmc.sleep(100)
 
-def play(playable_items):
+def play_videos(playable_items):
     playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
     playlist.clear()
     for playable_item in playable_items:
-        playlist.add(playable_item.file, playable_item.listitem)
+        playlist.add(playable_item.file.encode('utf-8'), playable_item.listitem)
 
     xbmc.Player().play(playlist)
 
 
-class Player(object):
+class RandomPlayer(object):
     def __init__(self):
         self.playlist_limit_length = 5
-        # special should probably be handled by a file handler or whatever
         self.video_database_prefix = 'videodb://'
+        self.music_database_prefix = 'musicdb://'
         self.playlist_suffix = '.xsp'
         self.tvshow_library = 'tvshows'
         self.movie_library = 'movies'
@@ -64,44 +65,26 @@ class Player(object):
     # I would also like to support a list of items directly, for instance if several movies are selected, a method
     #  would accept a list of the full paths to the movies, and then play those randomly. Probably even a list of
     #  container paths, that would then need to be resolved and fetched, much like tvshow/genres/<genreid>
-    def play_random_from_full_url(self, path):
+    def play_random_from_full_url(self, path, media='video'):
         # What to do with a full path directly to the item?
         if path.startswith(self.video_database_prefix):
             self._play_random_from_video_db(path)
+        elif path.startswith(self.music_database_prefix):
+            self._play_random_from_music_db(path)
         elif path.endswith(self.playlist_suffix):
             self._play_random_from_playlist(path)
-        else:
-            log("Unsupported path %s" % path, xbmc.LOGNOTICE)
-
-        # 'Files.GetDirectory' will give me a decent list of just about every container, but it does still have some problems:
-        # - It often returns a list of stuff that can't be random'd directly, like seasons, albums, or TV shows.
-        #  - For lists like these, they need to be listed themselves, their contents concat'd, and then random that list
-        #   - The type of info to request is also unknown until we can see what is inside of it
-        #  - Or parse the path and file (if an xsp) to see what it's a list of
-        #   - If it's going to be a list of items that are unplayable directly, then build a new path that describes what is wanted, if possible (if an artist is selected, add '-1' as the album to get all songs, or for a tv show set the season to '-1')
-        #   - If not possible, maybe a playlist that searches for tv shows, then cache the IDs returned from GetDirectory, and build new requests to GetDirectory to ge the listing for each, add them all together and shuffle
-        #   - This should also give me enough info to decide what type of info I need, episode/movie/song
-        #   - But it seems like it will perform worse than 'VideoLibrary.GetEpisodes' for playing episodes from all files
-        #  - Or request all of the info I would need for any type, and just ignore data that I don't need
-        # - Seasons are viewed with the file as a filesystem file/directory, not a videodb:// path I can use. !! But hey, musicdb albums do have a musicdb:// path
-        # - The property 'streamdetails' doesn't ever seem to be populated
-        # - It ignores the query. Which is probably a good thing, since the query is built improperly anyway
-        # - There is no way to limit it, so the list must be trimmed afterward
-
-        # TV show: Lists season, including '* All seasons', but only if there is more than one season
-        # - 'type' of items is Unknown
-        # TV show - season: lists episodes in season. '-1' is all episodes, '0' is specials
-        # - 'type' of items is episode
-        # TV show - <category>: lists category IDs, 'type' is unknown
-        # TV show - <category> - <category ID>: list matching TV shows, 'type' is tvshow
-
-        # episode playlist: lists episodes in playlist
-        # - 'type' of items is episode
+        elif path.startswith('plugin://'):
+            log("Unsupported path, but I think it's a plugin path '%s'" % path, xbmc.LOGNOTICE)
+        elif path.startswith('library://'):
+            log("Unsupported path, but I think it's a top level library .xml file '%s'" % path, xbmc.LOGNOTICE)
+        else: # others in 'special://', as well as 'file://', 'smb://', 'nfs://', and other file systems
+            self._play_random_from_file_system(path, media)
 
         # "Player.Open" on any library path tries to open everything in the picture slideshow viewer, but only succeeds in grabbing a frame from a video. Maybe the first frame from the first video
-        # - on a playlist it does the same thing. Doesn't work
+        # - on a real playlist (not Kodi's play queue) it does the same thing. Doesn't work
         # - on a file folder it works, but it go through the slideshow viewer. The slideshow viewer pops up for a moment, the sees that the first item is a video so pops up the video player. In betweeen items the slideshow pops in very briefly, and when stopped, it keeps the slideshow fullscreen with a gigantic play button on it. This also means that the play queue only contains the one item that the slideshow viewer parses out to play.
         # - Just not useable
+        # xbmc.Player().play in Python isn't any better
 
 
     def _play_random_from_video_db(self, path):
@@ -146,7 +129,7 @@ class Player(object):
         random_episodes = self._get_random_tv_episodes(tvshow_id, season)
         _method_args = "(tvshow_id=%s, season=%s)" % (str(tvshow_id), str(season))
         if random_episodes:
-            play(random_episodes)
+            play_videos(random_episodes)
             log("Successfully started playing random episodes with %s" % _method_args, xbmc.LOGDEBUG)
         else:
             log("Didn't find any episodes with %s" % _method_args, xbmc.LOGNOTICE)
@@ -175,7 +158,7 @@ class Player(object):
             random_episodes = [zip(*self._get_random_tv_episodes(show['tvshowid'])) for show in json_tvshows['result']['tvshows']]
             shuffle(random_episodes)
             random_episodes = random_episodes[:self.playlist_limit_length]
-            play(random_episodes)
+            play_videos(random_episodes)
             log("Successfully started playing random episodes with %s" % _method_args, xbmc.LOGDEBUG)
         else:
             log("Didn't find any tv shows with %s" % _method_args, xbmc.LOGNOTICE)
@@ -212,25 +195,21 @@ class Player(object):
             path = 'videodb://movies/titles/'
 
         # This will fail if a movie is passed in directly, 'movies/titles/<movieid>' or 'movies/<category>/<categoryid>/<movieid>'
-        json_request = {'jsonrpc': '2.0', 'method': 'Files.GetDirectory', 'id': 1,
-            'params': {'properties': ['file', 'title'], 'directory': path}}
-        json_movies = json.loads(xbmc.executeJSONRPC(json.dumps(json_request).encode('utf-8')).decode('utf-8'))
-
-        if 'result' in json_movies:
-            random_movies = [Movie(movie) for movie in json_movies['result']['files']]
-            shuffle(random_movies)
-            random_movies = random_movies[:self.playlist_limit_length]
-            play(random_movies)
+        json_movies = self._get_all_media_from_directory(path, 'video', ['title'], shuffle_list=True, limit=True)
+        if json_movies:
+            random_movies = [Movie(movie) for movie in json_movies]
+            play_videos(random_movies)
             log("Successfully started playing random movies from '%s'" % original_path, xbmc.LOGDEBUG)
         else:
             log("Didn't find any movies from '%s'" % original_path, xbmc.LOGNOTICE)
+
 
     # From context.playrandom, which passes along ListItem.FolderPath from the context menu, db_path and query can be goofy
     # a simple 'db_path' like 'tvshows/titles/<tvshowid>[/<season>[/episodeid]]' is clear enough
     # - also the head of sub-sections are fine; 'tvshows/genres/<genreid>'
     # - but going deeper 'tvshows/genres/<genreid>/<tvshowid>/<season>/<episodeid>' gets a bit murky
     # - But! to turn this guy back in to what is clear, just replace 'genres/<genreid>' with 'titles'
-    #  - We only really expect the genre selection to apply to the TV show itself, then list all seasons and episodes contained within
+    #  - We only really expect the genre to apply to the TV show selection, then list all seasons and episodes contained within
     #  - Ditto years/actors/studios/tags
     # 'query' is very icky. It looks acceptable, but it does not always accurately describe either the ListItem or its Container.
     # - Most of the time, it is simply in the reverse order of the path used to get to the Container of the ListItem, rather than the ListItem itself
@@ -247,6 +226,8 @@ class Player(object):
     # KODI--: This is just... an important API with an unpleasant design
     # KODI-ODD: sometimes db_path has a slash at the end and sometimes it does not
 
+    def _play_random_from_music_db(self, path):
+        log("Don't know how to play from the music library yet '{}'".format(path))
 
     def _play_random_from_playlist(self, path):
         playlist_xml = xbmcvfs.File(path.encode('utf-8'), 'r')
@@ -270,30 +251,64 @@ class Player(object):
 
 
     def _play_random_from_episode_playlist(self, path):
-        json_request = {'jsonrpc': '2.0', 'method': 'Files.GetDirectory', 'id': 1,
-            'params': {'properties': ['file', 'title', 'season', 'episode', 'showtitle'], 'directory': path}}
-        json_episodes = json.loads(xbmc.executeJSONRPC(json.dumps(json_request).encode('utf-8')).decode('utf-8'))
-
-        if 'result' in json_episodes:
-            random_episodes = [Episode(episode) for episode in json_episodes['result']['files']]
-            shuffle(random_episodes)
-            random_episodes = random_episodes[:self.playlist_limit_length]
-            play(random_episodes)
+        json_episodes = self._get_all_media_from_directory(path, 'video', ['title', 'season', 'episode', 'showtitle'], shuffle_list=True, limit=True)
+        if json_episodes:
+            random_episodes = [Episode(episode) for episode in json_episodes]
+            play_videos(random_episodes)
             log("Successfully started playing random episodes from '%s'" % path, xbmc.LOGDEBUG)
         else:
             log("Didn't find any episodes from '%s'" % path, xbmc.LOGNOTICE)
 
 
     def _play_random_from_movie_playlist(self, path):
-        json_request = {'jsonrpc': '2.0', 'method': 'Files.GetDirectory', 'id': 1,
-            'params': {'properties': ['file', 'title'], 'directory': path}}
-        json_movies = json.loads(xbmc.executeJSONRPC(json.dumps(json_request).encode('utf-8')).decode('utf-8'))
-
-        if 'result' in json_movies:
-            random_movies = [Movie(movie) for movie in json_movies['result']['files']]
-            shuffle(random_movies)
-            random_movies = random_movies[:self.playlist_limit_length]
-            play(random_movies)
+        json_movies = self._get_all_media_from_directory(path, 'video', ['title'], shuffle_list=True, limit=True)
+        if json_movies:
+            random_movies = [Movie(movie) for movie in json_movies]
+            play_videos(random_movies)
             log("Successfully started playing random movies from '%s'" % path, xbmc.LOGDEBUG)
         else:
             log("Didn't find any movies from '%s'" % path, xbmc.LOGNOTICE)
+
+
+    def _play_random_from_file_system(self, path, media='video'):
+        json_media = self._get_all_media_from_directory(path, media, recursive=True, shuffle_list=True, limit=True)
+        if json_media:
+            if media == 'video':
+                videos = [Video(video) for video in json_media]
+                play_videos(videos)
+                log("Successfully started playing random '%s' from '%s'" % (media, path), xbmc.LOGDEBUG)
+            else:
+                log("Unsupported path for '%s', but it's a file system path '%s'" % (media, path), xbmc.LOGNOTICE)
+        else:
+            log("Didn't find any playable '%s' from '%s'" % (media, path), xbmc.LOGNOTICE)
+
+
+    def _get_all_media_from_directory(self, path, media='video', properties=[], recursive=False, shuffle_list=False, limit=False):
+        # 'type' and 'id' pop out of this when the files are in the library; for instance 'type': 'episode', 'id': 79254
+        # directories are 'filetype': 'directory'
+        # 'video', 'music', 'pictures', 'files', 'programs'
+        json_request = {'jsonrpc': '2.0', 'method': 'Files.GetDirectory', 'id': 1,
+            'params': {'properties': properties, 'directory': path, 'media': media}}
+        json_result = json.loads(xbmc.executeJSONRPC(json.dumps(json_request).encode('utf-8')).decode('utf-8'))
+        if 'result' in json_result and 'files' in json_result['result']:
+            json_files = json_result['result']['files']
+            if recursive:
+                result = []
+                for file in json_files:
+                    if file['filetype'] == 'directory':
+                        result.extend(self._get_all_media_from_directory(file['file'], media, properties, recursive))
+                    else:
+                        result.append(file)
+                if shuffle_list:
+                    shuffle(result)
+                if limit:
+                    result = result[:self.playlist_limit_length]
+                return result
+            else:
+                if shuffle_list:
+                    shuffle(json_files)
+                if limit:
+                    json_files = json_files[:self.playlist_limit_length]
+                return json_files
+        else:
+            return []
