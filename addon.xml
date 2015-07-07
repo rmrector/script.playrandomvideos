@@ -2,7 +2,7 @@
 <addon id="script.playrandom" name="Play Random Items" version="0.0.1" provider-name="rmrector">
 	<requires>
 		<import addon="xbmc.python" version="2.20.0" />
-		<import addon="script.design.helper" version="0.0.1" /> <!-- This really needs to be optional -->
+		<import addon="script.module.devhelper" version="0.0.1" />
 	</requires>
 	<extension point="xbmc.python.library" library="script.py" />
 	<!-- ? 'module' to use in Python directly -->

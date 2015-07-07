@@ -1,8 +1,8 @@
-import xbmc
-import xbmcgui
+from __future__ import unicode_literals
 
-import os
 import json
+import os
+import xbmcgui
 
 class Video(object):
     def __init__(self, movie_json):

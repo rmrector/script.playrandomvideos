@@ -1,38 +1,19 @@
-
-import xbmc
-import xbmcaddon
-import xbmcgui
-import xbmcvfs
+from __future__ import unicode_literals
 
 import json
 import urllib
+import xbmc
+import xbmcvfs
+
 import xml.etree.ElementTree as ET
 from random import shuffle
 
+from devhelper import pykodi
+from devhelper.pykodi import log
+from devhelper.pykodi import wait
 from episode import Episode
 from movie import Movie
 from video import Video
-# from devhelper import log
-
-try:
-    xbmcaddon.Addon('script.design.helper')
-    logger_installed = True
-except:
-    logger_installed = False
-
-__addonid__ = 'script.playrandom'
-
-def log(message, level=xbmc.LOGDEBUG, log_to_gui=True):
-    if logger_installed:
-        # Yeah, this is ugly, so def want it to be a module
-        # Also, it may choke on messages that have double-quotes and commas
-        builtin = 'RunScript(script.design.helper, log, %s, "%s"' % (__addonid__, str(message).replace('"', '\'').encode('utf-8'))
-        if log_to_gui:
-            builtin += ', logToGui'
-        builtin += ')'
-        xbmc.executebuiltin(builtin)
-    else:
-        xbmc.log('[%s] %s' % (__addonid__, str(message).encode('utf-8')), level)
 
 def library_path(path):
     db_path = path.split('://')[1].split('?', 1)
@@ -40,9 +21,6 @@ def library_path(path):
     db_path = db_path[0].rstrip('/').split('/')
 
     return {'db_path': db_path, 'query': query}
-
-def wait():
-    xbmc.sleep(100)
 
 def play_videos(playable_items):
     playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
@@ -66,7 +44,6 @@ class RandomPlayer(object):
     #  would accept a list of the full paths to the movies, and then play those randomly. Probably even a list of
     #  container paths, that would then need to be resolved and fetched, much like tvshow/genres/<genreid>
     def play_random_from_full_url(self, path, media='video'):
-        # What to do with a full path directly to the item?
         if path.startswith(self.video_database_prefix):
             self._play_random_from_video_db(path)
         elif path.startswith(self.music_database_prefix):
@@ -79,13 +56,6 @@ class RandomPlayer(object):
             log("Unsupported path, but I think it's a top level library .xml file '%s'" % path, xbmc.LOGNOTICE)
         else: # others in 'special://', as well as 'file://', 'smb://', 'nfs://', and other file systems
             self._play_random_from_file_system(path, media)
-
-        # "Player.Open" on any library path tries to open everything in the picture slideshow viewer, but only succeeds in grabbing a frame from a video. Maybe the first frame from the first video
-        # - on a real playlist (not Kodi's play queue) it does the same thing. Doesn't work
-        # - on a file folder it works, but it go through the slideshow viewer. The slideshow viewer pops up for a moment, the sees that the first item is a video so pops up the video player. In betweeen items the slideshow pops in very briefly, and when stopped, it keeps the slideshow fullscreen with a gigantic play button on it. This also means that the play queue only contains the one item that the slideshow viewer parses out to play.
-        # - Just not useable
-        # xbmc.Player().play in Python isn't any better
-
 
     def _play_random_from_video_db(self, path):
         _path = library_path(path)['db_path']
@@ -139,8 +109,8 @@ class RandomPlayer(object):
         category_lookup = {
             'genres': 'genreid',
             'years': 'year',
-            'actors': 'actor',
-            'studios': 'studio',
+            'actors': 'actor', # TODO: The Actor filter expects an actor string, probably name. Frig
+            'studios': 'studio', # Also not working
             'tags': 'tag'}
         category = category_lookup[category]
 
@@ -150,18 +120,21 @@ class RandomPlayer(object):
         json_request = {'jsonrpc': '2.0', 'method': 'VideoLibrary.GetTVShows', 'id': 1,
             'params': {'filter':{category: category_id}}}
 
-        json_tvshows = xbmc.executeJSONRPC(json.dumps(json_request).encode('utf-8')).decode('utf-8')
-        json_tvshows = json.loads(json_tvshows)
+        json_tvshows = pykodi.execute_jsonrpc(json_request)
 
-        _method_args = "(category=%s, category_id=%s)" % (str(category), str(category_id))
-        if json_tvshows['result']:
-            random_episodes = [zip(*self._get_random_tv_episodes(show['tvshowid'])) for show in json_tvshows['result']['tvshows']]
+        _method_args = "(%s=%s)" % (str(category), str(category_id))
+        if 'result' not in json_tvshows:
+            log("JSON-RPC query '%s'; result '%s'" % (json.dumps(json_request, ensure_ascii=False), json.dumps(json_tvshows, ensure_ascii=False)), xbmc.LOGWARNING)
+        if 'tvshows' in json_tvshows['result']:
+            random_episodes = []
+            for show in json_tvshows['result']['tvshows']:
+                random_episodes.extend(self._get_random_tv_episodes(show['tvshowid']))
             shuffle(random_episodes)
             random_episodes = random_episodes[:self.playlist_limit_length]
             play_videos(random_episodes)
-            log("Successfully started playing random episodes with %s" % _method_args, xbmc.LOGDEBUG)
+            log("Successfully started playing random episodes with %s" % _method_args)
         else:
-            log("Didn't find any tv shows with %s" % _method_args, xbmc.LOGNOTICE)
+            log("Didn't find any tv shows with %s" % _method_args)
 
 
     def _get_random_tv_episodes(self, tvshow_id=None, season=None):
@@ -173,8 +146,7 @@ class RandomPlayer(object):
             if season and not season == '-1': # even though this param defaults to -1 for all seasons, it still chokes if passed in
                 json_request['params']['season'] = int(season)
 
-        json_episodes = xbmc.executeJSONRPC(json.dumps(json_request).encode('utf-8')).decode('utf-8')
-        json_episodes = json.loads(json_episodes)
+        json_episodes = pykodi.execute_jsonrpc(json_request)
 
         if 'result' in json_episodes:
             return [Episode(episode) for episode in json_episodes['result']['episodes']]
@@ -283,13 +255,15 @@ class RandomPlayer(object):
             log("Didn't find any playable '%s' from '%s'" % (media, path), xbmc.LOGNOTICE)
 
 
-    def _get_all_media_from_directory(self, path, media='video', properties=[], recursive=False, shuffle_list=False, limit=False):
+    def _get_all_media_from_directory(self, path, media='video', properties=None, recursive=False, shuffle_list=False, limit=False):
         # 'type' and 'id' pop out of this when the files are in the library; for instance 'type': 'episode', 'id': 79254
         # directories are 'filetype': 'directory'
         # 'video', 'music', 'pictures', 'files', 'programs'
         json_request = {'jsonrpc': '2.0', 'method': 'Files.GetDirectory', 'id': 1,
-            'params': {'properties': properties, 'directory': path, 'media': media}}
-        json_result = json.loads(xbmc.executeJSONRPC(json.dumps(json_request).encode('utf-8')).decode('utf-8'))
+            'params': {'directory': path, 'media': media}}
+        if properties:
+            json_request['params']['properties'] = properties
+        json_result = pykodi.execute_jsonrpc(json_request)
         if 'result' in json_result and 'files' in json_result['result']:
             json_files = json_result['result']['files']
             if recursive:

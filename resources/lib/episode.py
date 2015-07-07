@@ -1,7 +1,7 @@
-import xbmc
-import xbmcgui
+from __future__ import unicode_literals
 
 import json
+import xbmcgui
 
 class Episode(object):
     def __init__(self, episode_json):
