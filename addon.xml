@@ -7,11 +7,10 @@
 	<extension point="xbmc.python.library" library="script.py" />
 	<!-- ? 'module' to use in Python directly -->
 	<extension point="xbmc.addon.metadata">
-		<language/>
+		<language />
 		<summary lang="en">Plays random items</summary>
-		<description lang="en">This script plays random items from various types of lists.
-			Works on TV Shows/Seasons/Episode smart playlists, should work on Movie Sets/Genres/Music, other playlists. Search/Filter from the left hand side seems unlikely/precarious.</description>
-		<disclaimer lang="en">This add-on does not add functionality is used by skins or other add-ons, such as the 'Play Random Items menu item' add-on.</disclaimer>
+		<description lang="en">This script plays random items from various types of lists. Generally works on TV Shows and Movies, file systems, and some playlists. Music and some other unhandled cases still to come. Search/Filter from the left hand side seems unlikely/precarious.</description>
+		<disclaimer lang="en">This add-on does not add functionality on its own and must be supported by skins or other add-ons. Try the Context item 'Play Random Items' add-on!</disclaimer>
 		<platform>all</platform>
 	</extension>
 </addon>
