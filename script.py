@@ -22,8 +22,7 @@ from devhelper import pykodi
 from devhelper.pykodi import log
 
 addon = pykodi.Addon()
-
-sys.path.append(addon.resources_lib)
+sys.path.append(addon.resourcelibs)
 
 from playrandom import RandomPlayer
 random_player = RandomPlayer()
