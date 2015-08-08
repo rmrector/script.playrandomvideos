@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import json
 import xbmcgui
 
@@ -27,9 +25,9 @@ class Episode(object):
         if self.title:
             listitem_info['title'] = self.title.encode('utf-8')
         if self.show_title:
-            listitem_info['tvshowtitle'] = self.show_title.encode('utf-8')
+            listitem_info['tvshowtitle'] = self.show_title
 
-        listitem = xbmcgui.ListItem(self.label.encode('utf-8'))
+        listitem = xbmcgui.ListItem(self.label)
         listitem.setInfo('video', listitem_info)
 
         return listitem

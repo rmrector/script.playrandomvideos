@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import json
 import urllib
 import xbmc
@@ -10,7 +8,6 @@ from random import shuffle
 
 from devhelper import pykodi
 from devhelper.pykodi import log
-from devhelper.pykodi import wait
 from episode import Episode
 from movie import Movie
 from video import Video
@@ -26,10 +23,9 @@ def play_videos(playable_items):
     playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
     playlist.clear()
     for playable_item in playable_items:
-        playlist.add(playable_item.file.encode('utf-8'), playable_item.listitem)
+        playlist.add(playable_item.file, playable_item.listitem)
 
     xbmc.Player().play(playlist)
-
 
 class RandomPlayer(object):
     def __init__(self):
@@ -71,7 +67,6 @@ class RandomPlayer(object):
         else:
             log("Unsupported Video DB path '%s'." % path, xbmc.LOGNOTICE)
 
-
     def _play_random_tv_episodes_by_path(self, path):
         db_path = library_path(path)['db_path']
         path_len = len(db_path)
@@ -94,7 +89,6 @@ class RandomPlayer(object):
                 season = db_path[4] if path_len > 3 else None
                 self._play_random_tv_episodes(tvshow_id, season)
 
-
     def _play_random_tv_episodes(self, tvshow_id=None, season=None):
         random_episodes = self._get_random_tv_episodes(tvshow_id, season)
         _method_args = "(tvshow_id=%s, season=%s)" % (str(tvshow_id), str(season))
@@ -103,7 +97,6 @@ class RandomPlayer(object):
             log("Successfully started playing random episodes with %s" % _method_args, xbmc.LOGDEBUG)
         else:
             log("Didn't find any episodes with %s" % _method_args, xbmc.LOGNOTICE)
-
 
     def _play_random_tv_episodes_from_category(self, category, category_id):
         category_lookup = {
@@ -175,34 +168,11 @@ class RandomPlayer(object):
         else:
             log("Didn't find any movies from '%s'" % original_path, xbmc.LOGNOTICE)
 
-
-    # From context.playrandom, which passes along ListItem.FolderPath from the context menu, db_path and query can be goofy
-    # a simple 'db_path' like 'tvshows/titles/<tvshowid>[/<season>[/episodeid]]' is clear enough
-    # - also the head of sub-sections are fine; 'tvshows/genres/<genreid>'
-    # - but going deeper 'tvshows/genres/<genreid>/<tvshowid>/<season>/<episodeid>' gets a bit murky
-    # - But! to turn this guy back in to what is clear, just replace 'genres/<genreid>' with 'titles'
-    #  - We only really expect the genre to apply to the TV show selection, then list all seasons and episodes contained within
-    #  - Ditto years/actors/studios/tags
-    # 'query' is very icky. It looks acceptable, but it does not always accurately describe either the ListItem or its Container.
-    # - Most of the time, it is simply in the reverse order of the path used to get to the Container of the ListItem, rather than the ListItem itself
-    #  - The query for 'tvshows/year/<year>/<tvshowid>/<season>/<episodeid>' is 'season=<season>&tvshowid=<tvshowid>&year=<year>'
-    #  - even when the selected season/episode ListItem aired in a different year, the <year> selected when navigating is displayed
-    #  - even when the Container aired in a different year (or doesn't have an associated year), the year is displayed, with the wrong value
-    # - Rarely it does actually describe the ListItem itself
-    #  - ListItem 'movies/sets/<setid>' is the one culprit, and has a query of 'setid=<setid>'
-    # - Sometimes it also includes an 'xsp' query, which is JSON that describes more of the Container's info, such as sort, filter
-    #  - This seems to happen when navigating from the virtual library directory tree, rather than when accessed with a 'videodb://tvshows/titles/' URL.
-    #  - A ListItem inside of a smart playlist it fully describes the rules the smart playlist is built with
-    #  - In Progress TV Shows path is a nice 'tvshows/titles/<tvshowid>' and the xsp is a filter for inprogress
-    # path = 'tvshows/year/<year>/<tvshowid>/<season>/<episodeid>' query = 'season=<season>&tvshowid=<tvshowid>&year=<year>' : ICK
-    # KODI--: This is just... an important API with an unpleasant design
-    # KODI-ODD: sometimes db_path has a slash at the end and sometimes it does not
-
     def _play_random_from_music_db(self, path):
         log("Don't know how to play from the music library yet '{}'".format(path))
 
     def _play_random_from_playlist(self, path):
-        playlist_xml = xbmcvfs.File(path.encode('utf-8'), 'r')
+        playlist_xml = xbmcvfs.File(path, 'r')
         playlist_xml = playlist_xml.read()
         playlist_xml = ET.fromstring(playlist_xml)
 

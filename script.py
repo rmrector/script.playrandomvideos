@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 # examples of URLs I need to handle
 # videodb://movies/titles/6748
 # videodb://movies/genres/
@@ -33,9 +31,9 @@ def main():
         return
     # TODO: Show a loading indicator
 
-    full_url = sys.argv[1].decode("utf-8")
+    full_url = sys.argv[1]
     if len(sys.argv) > 2:
-        random_player.play_random_from_full_url(full_url, sys.argv[2].decode('utf-8'))
+        random_player.play_random_from_full_url(full_url, sys.argv[2])
     else:
         random_player.play_random_from_full_url(full_url)
 

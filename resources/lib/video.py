@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import json
 import os
 import xbmcgui
@@ -12,7 +10,7 @@ class Video(object):
     @property
     def listitem(self):
         """Build a Kodi ListItem that can be added to a "playlist" (Kodi play queue in python, not a real playlist) from this Movie"""
-        listitem = xbmcgui.ListItem(self.label.encode('utf-8'))
+        listitem = xbmcgui.ListItem(self.label)
         listitem.setInfo('video', {})
 
         return listitem
