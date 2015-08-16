@@ -39,7 +39,8 @@ class RandomPlayer(object):
     # I would also like to support a list of items directly, for instance if several movies are selected, a method
     #  would accept a list of the full paths to the movies, and then play those randomly. Probably even a list of
     #  container paths, that would then need to be resolved and fetched, much like tvshow/genres/<genreid>
-    def play_random_from_full_url(self, path, media='video'):
+    def play_random_from_full_url(self, path, media='video', limit=5):
+        self.playlist_limit_length = limit
         if path.startswith(self.video_database_prefix):
             self._play_random_from_video_db(path)
         elif path.startswith(self.music_database_prefix):
@@ -144,6 +145,7 @@ class RandomPlayer(object):
         if 'result' in json_episodes:
             return [Episode(episode) for episode in json_episodes['result']['episodes']]
         else:
+            log(json_episodes)
             return []
 
 

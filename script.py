@@ -27,13 +27,17 @@ random_player = RandomPlayer()
 
 def main():
     if len(sys.argv) == 1:
-        log("Play Random Items: 'RunScript(script.playrandom, \"(Container, ListItem).FolderPath\", [video/music/pictures])'", xbmc.LOGWARNING, True)
+        log("Play Random Items: 'RunScript(script.playrandom, \"(Container, ListItem).FolderPath\", [video/music/pictures], [limit])'", xbmc.LOGWARNING, True)
         return
     # TODO: Show a loading indicator
 
     full_url = sys.argv[1]
-    if len(sys.argv) > 2:
-        random_player.play_random_from_full_url(full_url, sys.argv[2])
+    media = sys.argv[2] if len(sys.argv) > 2 else None
+    length = int(sys.argv[3]) if len(sys.argv) > 3 else None
+    if length:
+        random_player.play_random_from_full_url(full_url, media, length)
+    elif media:
+        random_player.play_random_from_full_url(full_url, media)
     else:
         random_player.play_random_from_full_url(full_url)
 
