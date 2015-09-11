@@ -1,45 +1,51 @@
-# examples of URLs I need to handle
-# videodb://movies/titles/6748
-# videodb://movies/genres/
-# videodb://movies/directors/
-# videodb://movies/directors/9788/
-# smb://CUBER/Other/Apps/
-# special://profile/playlists/video/Buffy.xsp
-# videodb://tvshows/titles/1396/?xsp={"order":{"direction":"ascending","ignorefolders":0,"method":"sorttitle"},"type":"tvshows"}
-# library://video_flat/inprogressshows.xml/
-# library://video_flat/recentlyaddedmovies.xml/
-# library://video_flat/recentlyaddedepisodes.xml/
-# videodb://tvshows/titles/1480/2/?tvshowid=1480&xsp={"order":{"direction":"ascending","ignorefolders":0,"method":"sorttitle"},"type":"tvshows"}
-# ?? Keep an eye out for this one, because the filter applies to the tvshows (from the parent container), not the episodes inside the selected tv show. videodb://tvshows/titles/1580/?filter={"rules":{"and":[{"field":"rating","operator":"between","value":["9.5","10"]}]},"type":"tvshows"}&xsp={"order":{"direction":"ascending","ignorefolders":0,"method":"sorttitle"},"type":"tvshows"}
-
+import os
+import sys
+import urllib
 import xbmc
+import xbmcaddon
 
-import xml.etree.ElementTree as ET
+addon = xbmcaddon.Addon()
+resourcelibs = xbmc.translatePath(addon.getAddonInfo('path')).decode('utf-8')
+resourcelibs = os.path.join(resourcelibs, u'resources', u'lib')
+sys.path.append(resourcelibs)
 
-from devhelper import pykodi
-from devhelper.pykodi import log
+import playrandom
 
-addon = pykodi.Addon()
-sys.path.append(addon.resourcelibs)
+from pykodi import log
 
-from playrandom import RandomPlayer
-random_player = RandomPlayer()
+ignoredtypes = ['', 'addons']
 
 def main():
-    if len(sys.argv) == 1:
-        log("Play Random Items: 'RunScript(script.playrandom, \"(Container, ListItem).FolderPath\", [video/music/pictures], [limit])'", xbmc.LOGWARNING, True)
+    if len(sys.argv) < 2:
+        log("Play Random Videos: 'RunScript(script.playrandomvideos, \"list path\", label=Cartoon Network, [limit=1])'\nList path is the path to the list to play, like ListItem.FolderPath, which should always be wrapped in quotation marks. 'label' is the list name, like ListItem.Label, and is required for TV Show actor/studio/tag lists (for the speed!), but should always be passed in when available. 'limit' is the number of videos to queue up.", xbmc.LOGWARNING)
+        xbmc.executebuiltin("Notification(Incorrect usage of script.playrandomvideos, RunScript(script.playrandomvideos, \"list path\", label=\"Cartoon Network\", [limit=1]), 10000)")
         return
-    # TODO: Show a loading indicator
+    command = get_command('path')
+    path = library_path(command)
+    if path['type'] in ignoredtypes:
+        return
+    limit = int(command.get('limit', 1))
+    randomplayer = playrandom.RandomPlayer(limit)
+    randomplayer.play_randomvideos_from_path(path)
 
-    full_url = sys.argv[1]
-    media = sys.argv[2] if len(sys.argv) > 2 else None
-    length = int(sys.argv[3]) if len(sys.argv) > 3 else None
-    if length:
-        random_player.play_random_from_full_url(full_url, media, length)
-    elif media:
-        random_player.play_random_from_full_url(full_url, media)
-    else:
-        random_player.play_random_from_full_url(full_url)
+def get_command(first_arg_key=None):
+    command = {}
+    start = 2 if first_arg_key else 1
+    for x in range(start, len(sys.argv)):
+        arg = sys.argv[x].split("=")
+        command[arg[0].strip().lower()] = arg[1].strip() if len(arg) > 1 else True
+
+    if first_arg_key:
+        command[first_arg_key] = sys.argv[1]
+    return command
+
+def library_path(command):
+    path_type, db_path = command['path'].split('://')
+    db_path = db_path.split('?', 1)
+    query = urllib.unquote(db_path[1]) if len(db_path) > 1 else None
+    db_path = db_path[0].rstrip('/').split('/')
+
+    return {'full path': command['path'], 'path': db_path, 'type': path_type, 'query': query, 'label': command.get('label')}
 
 if __name__ == '__main__':
     main()

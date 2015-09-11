@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.playrandom" name="Play Random Items" version="0.0.1" provider-name="rmrector">
+<addon id="script.playrandomvideos" name="Play Random Videos" version="0.5.0~dev" provider-name="rmrector">
 	<requires>
 		<import addon="xbmc.python" version="2.20.0" />
-		<import addon="script.module.devhelper" version="0.0.1" />
 	</requires>
 	<extension point="xbmc.python.library" library="script.py" />
-	<!-- ? 'module' to use in Python directly -->
 	<extension point="xbmc.addon.metadata">
 		<language />
-		<summary lang="en">Plays random items</summary>
-		<description lang="en">This script plays random items from various types of lists. Generally works on TV Shows and Movies, file systems, and some playlists. Music and some other unhandled cases still to come. Search/Filter from the left hand side seems unlikely/precarious.</description>
-		<disclaimer lang="en">This add-on does not add functionality on its own and must be supported by skins or other add-ons. Try the Context item 'Play Random Items' add-on!</disclaimer>
+		<summary lang="en">Plays random videos from all sorts of lists.</summary>
+		<description lang="en">This script can select and play random episodes from TV shows, movies from genres/sets/years/tags, and videos from playlists, the filesystem, plugins (generally), and just about anything else.</description>
+		<disclaimer lang="en">This add-on does not add functionality on its own and must be supported by skins or other add-ons. Try the Context item 'Play Random Videos' add-on for quick access from the context menu.</disclaimer>
 		<platform>all</platform>
+		<license>The MIT License</license>
 	</extension>
 </addon>
