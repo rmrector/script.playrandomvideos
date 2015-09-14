@@ -5,11 +5,15 @@
 	</requires>
 	<extension point="xbmc.python.library" library="script.py" />
 	<extension point="xbmc.addon.metadata">
-		<language />
 		<summary lang="en">Plays random videos from all sorts of lists.</summary>
 		<description lang="en">This script can select and play random episodes from TV shows, movies from genres/sets/years/tags, and videos from playlists, the filesystem, plugins (generally), and just about anything else.</description>
 		<disclaimer lang="en">This add-on does not add functionality on its own and must be supported by skins or other add-ons. Try the Context item 'Play Random Videos' add-on for quick access from the context menu.</disclaimer>
 		<platform>all</platform>
+		<language />
+		<website>https://github.com/rmrector/script.playrandomvideos</website>
+		<forum>http://forum.kodi.tv/showthread.php?tid=238613</forum>
+		<email />
 		<license>The MIT License</license>
+		<source>https://github.com/rmrector/script.playrandomvideos</source>
 	</extension>
 </addon>
