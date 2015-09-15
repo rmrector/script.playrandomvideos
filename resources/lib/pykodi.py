@@ -3,11 +3,6 @@ import os
 import xbmc
 import xbmcaddon
 
-def execute_builtin(builtin_command):
-    builtin_result = xbmc.executebuiltin(builtin_command)
-    if builtin_result:
-        return builtin_result
-
 def execute_jsonrpc(jsonrpc_command):
     if isinstance(jsonrpc_command, dict):
         jsonrpc_command = json.dumps(jsonrpc_command, ensure_ascii=False)

@@ -30,7 +30,7 @@ class RandomPlayer(object):
                 videos = self._get_randomvideos_from_path('library://video/movies/titles.xml/')
             elif path['path'][1] == 'musicvideos':
                 videos = self._get_randomvideos_from_path('library://video/musicvideos/titles.xml/')
-            elif path['path'][1] == 'files.xml': # Trying to list all items from all sources is probably not a good idea ever
+            elif path['path'][1] in ('files.xml', 'addons.xml'): # Trying to descend into these is probably not a good idea ever
                 videos = []
         elif path['type'] == 'videodb':
             if path['path'][0] == 'tvshows':
@@ -112,6 +112,7 @@ class RandomPlayer(object):
             return []
 
     def _get_randomvideos_from_path(self, fullpath):
+        """Hits the filesystem more often than it needs to for some library paths, but it pretty much works for everything."""
         return self._recurse_randomvideos_from_path(fullpath)
 
     skip_foldernames = ('extrafanart', 'extrathumbs')
@@ -128,13 +129,12 @@ class RandomPlayer(object):
         r'.*mode=autoPlay.*', # Reddit videos
         r'plugin://plugin\.video\.southpark_unofficial/\?url=Search&mode=list&title=Search.*icon\.png')
     def _recurse_randomvideos_from_path(self, fullpath, depth=3):
-        """Hits the filesystem more often than it needs to for some library paths, but it pretty much works for everything."""
         if fullpath.startswith('plugin://'): # Traversing plugins is time consuming even on speedy hardware, limit depth to keep the delay reasonable
             depth = min(depth, 1)
         json_request = pykodi.get_base_json_request('Files.GetDirectory')
         json_request['params'] = {'directory': fullpath, 'media': 'video'}
         json_request['params']['sort'] = {'method': 'random'}
-        json_request['params']['limits'] = {'end': 5}
+        json_request['params']['limits'] = {'end': self.limit_length * 2}
 
         json_result = pykodi.execute_jsonrpc(json_request)
         if 'result' in json_result and 'files' in json_result['result']:

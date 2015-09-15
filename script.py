@@ -1,6 +1,6 @@
 import os
 import sys
-import urllib
+import urlparse
 import xbmc
 import xbmcaddon
 
@@ -24,7 +24,7 @@ ignoredtypes = ['', 'addons']
 #  - plugin://plugin.video.gq/?mode=GE&name=Fitness&url=%2fgenres%2fFitness.js%3fpage%3d1 - when selecting a category, does descend  properly
 def main():
     if len(sys.argv) < 2:
-        log("Play Random Videos: 'RunScript(script.playrandomvideos, \"list path\", label=Cartoon Network, [limit=1])'\nList path is the path to the list to play, like ListItem.FolderPath, which should always be wrapped in quotation marks. 'label' is the list name, like ListItem.Label, and is required for TV Show actor/studio/tag lists (for the speed!), but should always be passed in when available. 'limit' is the number of videos to queue up.", xbmc.LOGWARNING)
+        log("Play Random Videos: 'RunScript(script.playrandomvideos, \"list path\", \"label=Cartoon Network\", [limit=1])'\nList path is the path to the list to play, like ListItem.FolderPath, which should always be wrapped in quotation marks. 'label' is the list name, like ListItem.Label, and is required for TV Show actor/studio/tag lists (for the speed!), but should always be passed in when available, wrapping the whole thing in quotes, too. 'limit' is the number of videos to queue up, and defaults to a single video.", xbmc.LOGWARNING)
         xbmc.executebuiltin("Notification(Incorrect usage of script.playrandomvideos, RunScript(script.playrandomvideos, \"list path\", label=\"Cartoon Network\", [limit=1]), 10000)")
         return
     command = get_command('path')
@@ -39,7 +39,7 @@ def get_command(first_arg_key=None):
     command = {}
     start = 2 if first_arg_key else 1
     for x in range(start, len(sys.argv)):
-        arg = sys.argv[x].split("=")
+        arg = sys.argv[x].split("=", 1)
         command[arg[0].strip().lower()] = arg[1].strip() if len(arg) > 1 else True
 
     if first_arg_key:
@@ -49,7 +49,7 @@ def get_command(first_arg_key=None):
 def library_path(command):
     path_type, db_path = command['path'].split('://')
     db_path = db_path.split('?', 1)
-    query = urllib.unquote(db_path[1]) if len(db_path) > 1 else None
+    query = urlparse.parse_qs(db_path[1]) if len(db_path) > 1 else None
     db_path = db_path[0].rstrip('/').split('/')
 
     return {'full path': command['path'], 'path': db_path, 'type': path_type, 'query': query, 'label': command.get('label')}
