@@ -1,2 +1,4 @@
+v0.5.1 (2015-09-15)
+- Try blacklisting some troublesome plugin paths
 v0.5.0 (2015-09-11)
 - Initial WIP release
