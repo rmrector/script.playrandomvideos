@@ -1,3 +1,4 @@
+import re
 import xbmc
 import xbmcgui
 
@@ -114,6 +115,18 @@ class RandomPlayer(object):
         return self._recurse_randomvideos_from_path(fullpath)
 
     skip_foldernames = ('extrafanart', 'extrathumbs')
+    plugin_recurse_blacklist = (
+        'plugin://plugin.video.youtube/sign/in/',
+        'plugin://plugin.video.youtube/sign/out/',
+        'plugin://plugin.video.youtube/kodion/search/input/',
+        'plugin://plugin.video.gametrailerscom/search/',
+        'plugin://plugin.video.reddit_tv/?url=all&mode=searchVideos&type=',
+        'plugin://plugin.video.reddit_tv/?url=&mode=addSubreddit&type=',
+        'plugin://plugin.video.reddit_tv/?url=&mode=searchReddits&type=',
+        'plugin://plugin.video.time_com/?url=&mode=search')
+    plugin_recurse_blacklist_regex = (
+        r'.*mode=autoPlay.*', # Reddit videos
+        r'plugin://plugin\.video\.southpark_unofficial/\?url=Search&mode=list&title=Search.*icon\.png')
     def _recurse_randomvideos_from_path(self, fullpath, depth=3):
         """Hits the filesystem more often than it needs to for some library paths, but it pretty much works for everything."""
         if fullpath.startswith('plugin://'): # Traversing plugins is time consuming even on speedy hardware, limit depth to keep the delay reasonable
@@ -130,6 +143,11 @@ class RandomPlayer(object):
                 if result_file['file'].endswith(('.m3u', '.pls', '.cue')):
                     # m3u acts as a directory but "'media': 'video'" doesn't filter out flac/mp3/etc like real directories; the others probably do the same.
                     continue
+                if result_file['file'].startswith('plugin://'):
+                    if result_file['file'] in self.plugin_recurse_blacklist:
+                        continue
+                    if any(re.match(blackrg, result_file['file']) for blackrg in self.plugin_recurse_blacklist_regex):
+                        continue
                 if result_file['label'] in self.skip_foldernames:
                     continue
                 if result_file['filetype'] == 'directory':
