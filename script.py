@@ -13,7 +13,7 @@ import playrandom
 
 from pykodi import log
 
-ignoredtypes = ['', 'addons']
+ignoredtypes = ('', 'addons', 'sources')
 
 # NOTE: Plugin handling is ooky! Many include "directory" items that do something other than provide a list when selected, like Youtube's Sign In/Out and Search. A blacklist of "directory"s that it shouldn't descend into is way too cumbersome to try to find and list every damn path for every damn plugin, and will simply never be complete. And then I added regex !#%!
 # - Ideally Kodi would have more than just isFolder for Python ListItems, maybe like 'video, audio, image, file, script, directory', and then the 'media' param could do the filtering, as long as the add-on sets it correctly. Every plugin would have to change for this to work, but at least it would be built into Kodi.

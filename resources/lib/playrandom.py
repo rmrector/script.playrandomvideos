@@ -112,7 +112,7 @@ class RandomPlayer(object):
     def _get_randomepisodes_by_path(self, path):
         path_len = len(path['path'])
         category = path['path'][1] if path_len > 1 else None
-        if category in [None, 'titles']:
+        if category in (None, 'titles'):
             tvshow_id = path['path'][2] if path_len > 2 else None
             season = path['path'][3] if path_len > 3 else None
             return self._get_randomepisodes(tvshow_id, season, path['watchmode'])
@@ -227,6 +227,7 @@ class RandomPlayer(object):
                 if result_file['file'].endswith(('.m3u', '.pls', '.cue')):
                     # m3u acts as a directory but "'media': 'video'" doesn't filter out flac/mp3/etc like real directories; the others probably do the same.
                     continue
+                # skip blacklisted paths
                 if result_file['file'].startswith('plugin://'):
                     if result_file['file'] in self.plugin_recurse_blacklist:
                         continue
