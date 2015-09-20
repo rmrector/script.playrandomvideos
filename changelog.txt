@@ -1,3 +1,5 @@
+v0.6.0 (2015-09-20)
+- Add unwatched/watched filter
 v0.5.1 (2015-09-15)
 - Try blacklisting some troublesome plugin paths
 v0.5.0 (2015-09-11)

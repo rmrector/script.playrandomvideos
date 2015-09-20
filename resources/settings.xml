@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<settings>
+  <category label="32900">
+    <setting label="32901" type="labelenum" id="watchmodemovies" default="all videos" values="all videos|unwatched|watched|ask me" />
+    <setting label="32902" type="labelenum" id="watchmodetvshows" default="all videos" values="all videos|unwatched|watched|ask me" />
+    <setting label="32903" type="labelenum" id="watchmodemusicvideos" default="all videos" values="all videos|unwatched|watched|ask me" />
+  </category>
+</settings>

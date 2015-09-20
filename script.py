@@ -24,35 +24,42 @@ ignoredtypes = ['', 'addons']
 #  - plugin://plugin.video.gq/?mode=GE&name=Fitness&url=%2fgenres%2fFitness.js%3fpage%3d1 - when selecting a category, does descend  properly
 def main():
     if len(sys.argv) < 2:
-        log("Play Random Videos: 'RunScript(script.playrandomvideos, \"list path\", \"label=Cartoon Network\", [limit=1])'\nList path is the path to the list to play, like ListItem.FolderPath, which should always be wrapped in quotation marks. 'label' is the list name, like ListItem.Label, and is required for TV Show actor/studio/tag lists (for the speed!), but should always be passed in when available, wrapping the whole thing in quotes, too. 'limit' is the number of videos to queue up, and defaults to a single video.", xbmc.LOGWARNING)
-        xbmc.executebuiltin("Notification(Incorrect usage of script.playrandomvideos, RunScript(script.playrandomvideos, \"list path\", label=\"Cartoon Network\", [limit=1]), 10000)")
+        log("""Play Random Videos: 'RunScript(script.playrandomvideos, \"list path\", \"label=Cartoon Network\", [limit=1], [forcewatchmode=watched])'
+List path is the path to the list to play, like ListItem.FolderPath, which should be escaped ($ESCINFO[]) or wrapped in
+quotation marks. 'label' is the list name, like ListItem.Label, and is required for TV Show actor/studio/tag lists, but
+should always be passed in when available, also escaped/quoted. 'limit' is the number of videos to queue up, and
+defaults to a single video. 'forcewatchmode' overrides the default watch mode selected in the add-on settings.""",
+            xbmc.LOGNOTICE)
+        xbmc.executebuiltin("Notification(See log for usage: script.playrandomvideos, RunScript(script.playrandomvideos, \"list path\", label=\"Cartoon Network\", [limit=1], [forcewatchmode=watched]), 10000)")
         return
-    command = get_command('path')
-    path = library_path(command)
-    if path['type'] in ignoredtypes:
+    if not sys.argv[1]:
         return
-    limit = int(command.get('limit', 1))
+
+    pathinfo = get_pathinfo()
+    if pathinfo['type'] in ignoredtypes:
+        return
+    limit = int(pathinfo.get('limit', 1))
     randomplayer = playrandom.RandomPlayer(limit)
-    randomplayer.play_randomvideos_from_path(path)
+    randomplayer.play_randomvideos_from_path(pathinfo)
 
-def get_command(first_arg_key=None):
-    command = {}
-    start = 2 if first_arg_key else 1
-    for x in range(start, len(sys.argv)):
-        arg = sys.argv[x].split("=", 1)
-        command[arg[0].strip().lower()] = arg[1].strip() if len(arg) > 1 else True
+def get_pathinfo():
+    pathinfo = {}
+    for i in range(2, len(sys.argv)):
+        arg = sys.argv[i].split("=", 1)
+        pathinfo[arg[0].strip().lower()] = arg[1].strip() if len(arg) > 1 else True
 
-    if first_arg_key:
-        command[first_arg_key] = sys.argv[1]
-    return command
+    pathinfo['full path'] = sys.argv[1]
 
-def library_path(command):
-    path_type, db_path = command['path'].split('://')
+    path_type, db_path = pathinfo['full path'].split('://')
     db_path = db_path.split('?', 1)
     query = urlparse.parse_qs(db_path[1]) if len(db_path) > 1 else None
     db_path = db_path[0].rstrip('/').split('/')
 
-    return {'full path': command['path'], 'path': db_path, 'type': path_type, 'query': query, 'label': command.get('label')}
+    pathinfo['path'] = db_path
+    pathinfo['type'] = path_type
+    pathinfo['query'] = query
+
+    return pathinfo
 
 if __name__ == '__main__':
     main()

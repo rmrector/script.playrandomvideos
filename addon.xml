@@ -3,7 +3,7 @@
 	<requires>
 		<import addon="xbmc.python" version="2.20.0" />
 	</requires>
-	<extension point="xbmc.python.library" library="script.py" />
+	<extension point="xbmc.python.script" library="script.py" />
 	<extension point="xbmc.addon.metadata">
 		<summary lang="en">Plays random videos from all sorts of lists.</summary>
 		<description lang="en">This script can select and play random episodes from TV shows, movies from genres/sets/years/tags, and videos from playlists, the filesystem, plugins (generally), and just about anything else.</description>
