@@ -4,6 +4,11 @@
 msgid ""
 msgstr ""
 
+# Commands
+msgctxt "#32100"
+msgid "Play Random"
+msgstr ""
+
 # Headings
 msgctxt "#32010"
 msgid "Filter random selection by watched status"
