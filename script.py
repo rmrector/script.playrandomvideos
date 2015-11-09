@@ -17,13 +17,9 @@ ignoredtypes = ('', 'addons', 'sources', 'plugin')
 
 def main():
     if len(sys.argv) < 2:
-        log("""Play Random Videos: 'RunScript(script.playrandomvideos, \"list path\", \"label=Cartoon Network\", [limit=1], [forcewatchmode=watched])'
-List path is the path to the list to play, like ListItem.FolderPath, which should be escaped ($ESCINFO[]) or wrapped in
-quotation marks. 'label' is the list name, like ListItem.Label, and is required for TV Show actor/studio/tag lists, but
-should always be passed in when available, also escaped/quoted. 'limit' is the number of videos to queue up, and
-defaults to a single video. 'forcewatchmode' overrides the default watch mode selected in the add-on settings.""",
-            xbmc.LOGNOTICE)
-        xbmc.executebuiltin("Notification(See log for usage: script.playrandomvideos, RunScript(script.playrandomvideos, \"list path\", label=\"Cartoon Network\", [limit=1], [forcewatchmode=watched]), 10000)")
+        runscript = 'RunScript(script.playrandomvideos, "<list path>", "label=<list label>", limit=<limit>, forcewatchmode=<watchedmode>)'
+        log("See README.md for usage: '%s'" % runscript, xbmc.LOGNOTICE)
+        xbmc.executebuiltin('Notification(See README.md for usage: script.playrandomvideos, %s, 10000)' % runscript)
         return
     if not sys.argv[1]:
         return
