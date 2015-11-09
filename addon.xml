@@ -6,8 +6,8 @@
 	<extension point="xbmc.python.script" library="script.py" />
 	<extension point="xbmc.addon.metadata">
 		<summary lang="en">Plays random videos from all sorts of lists.</summary>
-		<description lang="en">This script can select and play random episodes from TV shows, movies from genres/sets/years/tags, and videos from playlists, the filesystem, plugins (generally), and just about anything else.</description>
-		<disclaimer lang="en">This add-on does not add functionality on its own and must be supported by skins or other add-ons. Try the Context item 'Play Random Videos' add-on for quick access from the context menu.</disclaimer>
+		<description lang="en">This script can select and play random episodes from TV shows, movies from genres/sets/years/tags, and videos from playlists, the filesystem, and just about anything else, other than plugins.</description>
+		<disclaimer lang="en">This add-on does not add functionality on its own and must be supported by skins or other add-ons. Try the Context item 'Play Random Video' add-on for quick access from the context menu.</disclaimer>
 		<platform>all</platform>
 		<language />
 		<website>https://github.com/rmrector/script.playrandomvideos</website>

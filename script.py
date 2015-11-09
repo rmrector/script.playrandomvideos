@@ -13,15 +13,8 @@ import playrandom
 
 from pykodi import log
 
-ignoredtypes = ('', 'addons', 'sources')
+ignoredtypes = ('', 'addons', 'sources', 'plugin')
 
-# NOTE: Plugin handling is ooky! Many include "directory" items that do something other than provide a list when selected, like Youtube's Sign In/Out and Search. A blacklist of "directory"s that it shouldn't descend into is way too cumbersome to try to find and list every damn path for every damn plugin, and will simply never be complete. And then I added regex !#%!
-# - Ideally Kodi would have more than just isFolder for Python ListItems, maybe like 'video, audio, image, file, script, directory', and then the 'media' param could do the filtering, as long as the add-on sets it correctly. Every plugin would have to change for this to work, but at least it would be built into Kodi.
-# NOTE: Plugins also do other weird stuff that I don't know how to deal with simply:
-# - Consider southpark_unofficial: the episodes are folders so that it can queue up multiple parts of the episode when selected. Can they be set to isFolder=False and still do that? If not, how could it work if Kodi expanded beyond isFolder?
-# - Or GQ: this doesn't descend from the top plugin path. Kodi can't descend it properly either, with JSON-RPC method Playlist.Add recursive directory just tries to list through the top menu over and over again. It works when selecting the category in the UI, though.
-#  - plugin://plugin.video.gq/?url=/genres/Fitness.js?page=1&name=Fitness&mode=GE - in from listing main plugin, doesn't descend properly
-#  - plugin://plugin.video.gq/?mode=GE&name=Fitness&url=%2fgenres%2fFitness.js%3fpage%3d1 - when selecting a category, does descend  properly
 def main():
     if len(sys.argv) < 2:
         log("""Play Random Videos: 'RunScript(script.playrandomvideos, \"list path\", \"label=Cartoon Network\", [limit=1], [forcewatchmode=watched])'

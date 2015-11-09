@@ -1,3 +1,5 @@
+v0.7.0 (2015-11-08)
+- Ignore plugin paths for now
 v0.6.0 (2015-09-20)
 - Add unwatched/watched filter
 v0.5.1 (2015-09-15)

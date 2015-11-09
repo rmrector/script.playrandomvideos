@@ -1,4 +1,4 @@
-import re
+import json
 import xbmc
 import xbmcaddon
 import xbmcgui
@@ -17,6 +17,8 @@ WATCHMODE_WATCHED_LOCALIZE_ID = 16102
 WATCHMODE_WATCHED = 'watched'
 WATCHMODE_ASKME = 'ask me'
 WATCHMODE_NONE = 'none'
+
+MAX_FILESYSTEM_LIMIT = 100
 
 def _play_videos(items):
     playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
@@ -94,13 +96,20 @@ class RandomPlayer(object):
                 videos = self._get_randomepisodes(watchmode=path['watchmode'])
             elif path['path'][1] in ('movies', 'musicvideos'):
                 videos = self._get_randomvideos_from_path('library://video/%s/titles.xml/' % path['path'][1], path['watchmode'])
-            elif path['path'][1] in ('files.xml', 'addons.xml'): # Trying to descend into these is probably not a good idea ever
+            elif path['path'][1] in ('files.xml', 'addons.xml'):
+                # Trying to descend into these is probably not a good idea ever
                 videos = []
         elif path['type'] == 'videodb':
             if path['path'][0] == 'tvshows':
                 videos = self._get_randomepisodes_by_path(path)
             elif path['path'][0] in ('movies', 'musicvideos') and len(path['path']) < 3:
+                # Hasn't selected a genre/studio/etc yet
                 videos = self._get_randomvideos_from_path('library://video/%s/titles.xml/' % path['path'][0], path['watchmode'])
+        elif path['type'] == 'musicdb':
+            return # Nono, not music
+        else:
+            # probably file system, limit the max size because descending into many directories can be painful
+            self.limit_length = min(self.limit_length, MAX_FILESYSTEM_LIMIT)
 
         if videos == None:
             videos = self._get_randomvideos_from_path(path['full path'], path['watchmode'])
@@ -193,31 +202,16 @@ class RandomPlayer(object):
         return self._recurse_randomvideos_from_path(fullpath, watchmode)
 
     skip_foldernames = ('extrafanart', 'extrathumbs')
-    plugin_recurse_blacklist = (
-        'plugin://plugin.video.youtube/sign/in/',
-        'plugin://plugin.video.youtube/sign/out/',
-        'plugin://plugin.video.youtube/kodion/search/input/',
-        'plugin://plugin.video.gametrailerscom/search/',
-        'plugin://plugin.video.reddit_tv/?url=all&mode=searchVideos&type=',
-        'plugin://plugin.video.reddit_tv/?url=&mode=addSubreddit&type=',
-        'plugin://plugin.video.reddit_tv/?url=&mode=searchReddits&type=',
-        'plugin://plugin.video.time_com/?url=&mode=search')
-    plugin_recurse_blacklist_regex = (
-        r'.*mode=autoPlay.*', # Reddit videos
-        r'plugin://plugin\.video\.southpark_unofficial/\?url=Search&mode=list&title=Search.*icon\.png')
     def _recurse_randomvideos_from_path(self, fullpath, watchmode=WATCHMODE_ALLVIDEOS, depth=3):
-        # Fark, I can't filter this, watchmode for movies could get hairy
-        if fullpath.startswith('plugin://'): # Traversing plugins is time consuming even on speedy hardware, limit depth to keep the delay reasonable
-            depth = min(depth, 1)
         json_request = pykodi.get_base_json_request('Files.GetDirectory')
         json_request['params'] = {'directory': fullpath, 'media': 'video'}
-        json_request['params']['sort'] = {'method': 'random'}
 
         if watchmode != WATCHMODE_ALLVIDEOS:
+            # 'Files.GetDirectory' can't be filtered, grab playcount and a lot more extras and we'll filter in the loop later
             json_request['params']['properties'] = ['playcount']
-            # WARN: This is ooky and bound to fail; we should only get here for movies, though
             json_request['params']['limits'] = {'end': self.limit_length * 20}
-        else:
+        elif not fullpath.startswith('videodb'):
+            # for files, sample from more directories so random doesn't clump up too much under one directory
             json_request['params']['limits'] = {'end': self.limit_length * 2}
 
         json_result = pykodi.execute_jsonrpc(json_request)
@@ -227,12 +221,6 @@ class RandomPlayer(object):
                 if result_file['file'].endswith(('.m3u', '.pls', '.cue')):
                     # m3u acts as a directory but "'media': 'video'" doesn't filter out flac/mp3/etc like real directories; the others probably do the same.
                     continue
-                # skip blacklisted paths
-                if result_file['file'].startswith('plugin://'):
-                    if result_file['file'] in self.plugin_recurse_blacklist:
-                        continue
-                    if any(re.match(blackrg, result_file['file']) for blackrg in self.plugin_recurse_blacklist_regex):
-                        continue
                 if result_file['label'] in self.skip_foldernames:
                     continue
                 if result_file['filetype'] == 'directory':
