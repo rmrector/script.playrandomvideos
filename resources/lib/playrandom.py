@@ -127,8 +127,9 @@ class RandomPlayer(object):
             elif path['path'][0] in ('movies', 'musicvideos') and len(path['path']) < 3:
                 # Hasn't selected a genre/studio/etc yet
                 videos = self._get_randomvideos_from_path('library://video/%s/titles.xml/' % path['path'][0], path['watchmode'])
-        elif path['type'] == 'musicdb':
-            return # Nono, not music
+        elif path['type'] == 'special':
+            if path['path'][0] == 'videoplaylists':
+                videos = []
         else:
             # probably file system, set flag to watch directory count
             self.file_mode = True
