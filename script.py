@@ -17,7 +17,7 @@ ignoredtypes = ('', 'addons', 'sources', 'plugin')
 
 def main():
     if len(sys.argv) < 2:
-        runscript = 'RunScript(script.playrandomvideos, "<list path>", "label=<list label>", limit=<limit>, forcewatchmode=<watchedmode>)'
+        runscript = 'RunScript(script.playrandomvideos, "<list path>", "label=<list label>", limit=<limit>, forcewatchmode=<watch mode>)'
         log("See README.md for usage: '%s'" % runscript, xbmc.LOGNOTICE)
         xbmc.executebuiltin('Notification(See README.md for usage: script.playrandomvideos, %s, 10000)' % runscript)
         return

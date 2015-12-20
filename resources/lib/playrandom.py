@@ -1,4 +1,3 @@
-import json
 import xbmc
 import xbmcaddon
 import xbmcgui
@@ -73,7 +72,6 @@ def _get_watchmode(path):
         return WATCHMODE_ALLVIDEOS
 
 def _ask_me():
-    # all, unwatched, watched
     options = [xbmc.getLocalizedString(WATCHMODE_ALLVIDEOS_LOCALIZE_ID), xbmc.getLocalizedString(WATCHMODE_UNWATCHED_LOCALIZE_ID), xbmc.getLocalizedString(WATCHMODE_WATCHED_LOCALIZE_ID)]
     selectedindex = xbmcgui.Dialog().select(xbmcaddon.Addon().getLocalizedString(SELECTWATCHMODE_HEADING_LOCALIZE_ID), options)
 
@@ -125,7 +123,7 @@ class RandomPlayer(object):
             if path['path'][0] == 'tvshows':
                 videos = self._get_randomepisodes_by_path(path)
             elif path['path'][0] in ('movies', 'musicvideos') and len(path['path']) < 3:
-                # Hasn't selected a genre/studio/etc yet
+                # Hasn't selected a genre/studio/etc, select from all options
                 videos = self._get_randomvideos_from_path('library://video/%s/titles.xml/' % path['path'][0], path['watchmode'])
         elif path['type'] == 'special':
             if path['path'][0] == 'videoplaylists':
@@ -134,11 +132,12 @@ class RandomPlayer(object):
             # probably file system, set flag to watch directory count
             self.file_mode = True
 
-        if videos == None:
+        if videos == None: # skips empty lists set above
             videos = self._get_randomvideos_from_path(path['full path'], path['watchmode'])
 
-        shuffle(videos)
-        _play_videos(videos)
+        if videos:
+            shuffle(videos)
+            _play_videos(videos)
         xbmc.executebuiltin('Dialog.Close(busydialog)')
 
     def _get_randomepisodes_by_path(self, path):
@@ -154,8 +153,8 @@ class RandomPlayer(object):
             category_id = path['path'][2]
             return self._get_randomepisodes_by_category(category, category_id, path['label'], watchmode=path['watchmode'])
         else: # Nested TV show selected
-            tvshow_id = path['path'][3] if path_len > 2 else None
-            season = path['path'][4] if path_len > 3 else None
+            tvshow_id = path['path'][3] if path_len > 4 else None
+            season = path['path'][4] if path_len > 5 else None
             return self._get_randomepisodes(tvshow_id, season, path['watchmode'])
 
     def _get_randomepisodes(self, tvshow_id=None, season=None, watchmode=WATCHMODE_ALLVIDEOS):
@@ -229,7 +228,7 @@ class RandomPlayer(object):
         return []
 
     def _get_randomvideos_from_path(self, fullpath, watchmode=WATCHMODE_ALLVIDEOS):
-        """Hits the filesystem more often than it needs to for some library paths, but it pretty much works for everything."""
+        """Hits the filesystem more often than it needs to for TV shows, but it pretty much works for everything."""
         return self._recurse_randomvideos_from_path(fullpath, watchmode)
 
     skip_foldernames = ('extrafanart', 'extrathumbs')
@@ -270,9 +269,7 @@ class RandomPlayer(object):
                             local_warning_dircount += 1
                         result.extend(self._recurse_randomvideos_from_path(result_file['file'], watchmode, depth - 1))
                 else:
-                    if watchmode == WATCHMODE_ALLVIDEOS:
-                        result.append(result_file)
-                    elif 'playcount' not in result_file:
+                    if watchmode == WATCHMODE_ALLVIDEOS or 'playcount' not in result_file:
                         result.append(result_file)
                     elif watchmode == WATCHMODE_UNWATCHED and result_file['playcount'] == 0:
                         result.append(result_file)
