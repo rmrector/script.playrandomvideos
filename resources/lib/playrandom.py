@@ -15,7 +15,10 @@ WATCHMODE_UNWATCHED_LOCALIZE_ID = 16101
 WATCHMODE_UNWATCHED = 'unwatched'
 WATCHMODE_WATCHED_LOCALIZE_ID = 16102
 WATCHMODE_WATCHED = 'watched'
+WATCHMODE_ASKME_LOCALIZE_ID = 36521
 WATCHMODE_ASKME = 'ask me'
+# Same order as settings
+WATCHMODES = (WATCHMODE_ALLVIDEOS, WATCHMODE_UNWATCHED, WATCHMODE_WATCHED, WATCHMODE_ASKME)
 WATCHMODE_NONE = 'none'
 
 MAX_FILESYSTEM_LIMIT = 100
@@ -46,12 +49,19 @@ def _get_watchmode(path):
     if not option:
         addon = xbmcaddon.Addon()
         sectionindex = 0 if path['type'] == 'videodb' else 1
+        settingenum = None
         if path['path'][sectionindex] in ('movies', 'recentlyaddedmovies.xml', 'recentlyaddedmovies'):
-            option = addon.getSetting('watchmodemovies')
-        if path['path'][sectionindex] in ('tvshows', 'inprogressshows.xml', 'recentlyaddedepisodes.xml', 'recentlyaddedepisodes'):
-            option = addon.getSetting('watchmodetvshows')
-        if path['path'][sectionindex] in ('musicvideos', 'recentlyaddedmusicvideos.xml', 'recentlyaddedmusicvideos'):
-            option = addon.getSetting('watchmodemusicvideos')
+            settingenum = addon.getSetting('watchmodemovies')
+        elif path['path'][sectionindex] in ('tvshows', 'inprogressshows.xml', 'recentlyaddedepisodes.xml', 'recentlyaddedepisodes'):
+            settingenum = addon.getSetting('watchmodetvshows')
+        elif path['path'][sectionindex] in ('musicvideos', 'recentlyaddedmusicvideos.xml', 'recentlyaddedmusicvideos'):
+            settingenum = addon.getSetting('watchmodemusicvideos')
+
+        if settingenum:
+            try:
+                option = WATCHMODES[int(settingenum)]
+            except ValueError:
+                pass
 
     if option == WATCHMODE_ASKME:
         return _ask_me()
