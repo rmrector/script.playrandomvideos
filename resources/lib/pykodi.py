@@ -1,5 +1,5 @@
+import collections
 import json
-import os
 import xbmc
 import xbmcaddon
 
@@ -16,8 +16,6 @@ def get_base_json_request(method):
     return {'jsonrpc': '2.0', 'method': method, 'params': {}, 'id': 1}
 
 def log(message, level=xbmc.LOGDEBUG):
-    if level < xbmc.LOGNOTICE:
-        return
     addonid = xbmcaddon.Addon().getAddonInfo('id')
 
     if isinstance(message, (dict, list, tuple)):
@@ -44,12 +42,12 @@ def _json_to_str(jsoninput):
 
 class LogJSONEncoder(json.JSONEncoder):
     def default(self, obj):
-        if isinstance(obj, tuple):
-            return list(obj)
-        # switch this to isinstance collections.Mapping (make dict) and collections.Iterable (make list)
-        elif hasattr(obj, 'keys'):
+        if isinstance(obj, (dict, list, basestring)):
+            return obj
+        if isinstance(obj, collections.Mapping):
             return dict((key, obj[key]) for key in obj.keys())
-        elif hasattr(obj, '__dict__'):
+        if isinstance(obj, collections.Iterable):
+            return list(obj)
+        if hasattr(obj, '__dict__'):
             return obj.__dict__
-        else:
-            return str(obj)
+        return str(obj)
