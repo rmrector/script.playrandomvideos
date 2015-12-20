@@ -177,9 +177,11 @@ class RandomPlayer(object):
         json_result = pykodi.execute_jsonrpc(json_request)
         if 'result' in json_result and 'episodes' in json_result['result']:
             return json_result['result']['episodes']
-        else:
-            log(json_result, xbmc.LOGWARNING)
-            return []
+        elif 'error' in json_result:
+            _jsonerror_notification()
+            log(json_result, xbmc.LOGDEBUG)
+
+        return []
 
     category_lookup = {
         'genres': 'genreid',
@@ -220,9 +222,11 @@ class RandomPlayer(object):
                     break
             shuffle(random_episodes)
             return random_episodes[:self.limit_length]
-        else:
-            log(json_result, xbmc.LOGWARNING)
-            return []
+        elif 'error' in json_result:
+            _jsonerror_notification()
+            log(json_result, xbmc.LOGDEBUG)
+
+        return []
 
     def _get_randomvideos_from_path(self, fullpath, watchmode=WATCHMODE_ALLVIDEOS):
         """Hits the filesystem more often than it needs to for some library paths, but it pretty much works for everything."""
@@ -278,6 +282,10 @@ class RandomPlayer(object):
             shuffle(result)
             return result[:MAX_FILESYSTEM_LIMIT if self.filewarning else self.limit_length]
         elif 'error' in json_result:
-            log(json_result, xbmc.LOGWARNING)
+            _jsonerror_notification()
+            log(json_result, xbmc.LOGDEBUG)
 
         return []
+
+def _jsonerror_notification():
+    xbmcgui.Dialog().notification('Add-on warning: Play Random Videos', 'Encountered a JSON-RPC error. More info in the debug log.', xbmcgui.NOTIFICATION_WARNING)
