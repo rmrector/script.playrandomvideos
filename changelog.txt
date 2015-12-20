@@ -1,6 +1,7 @@
 v0.7.1~dev
 - Localize setting options
 - Rework files to limit list based on # of directories
+- Use simplejson if not running Python 2.7
 v0.7.0 (2015-11-08)
 - Ignore plugin paths for now
 v0.6.0 (2015-09-20)

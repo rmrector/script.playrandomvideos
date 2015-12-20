@@ -1,7 +1,12 @@
 import collections
-import json
+import sys
 import xbmc
 import xbmcaddon
+
+if sys.version_info < (2, 7):
+    import simplejson as json
+else:
+    import json
 
 def execute_jsonrpc(jsonrpc_command):
     if isinstance(jsonrpc_command, dict):

@@ -2,6 +2,7 @@
 <addon id="script.playrandomvideos" name="Play Random Videos" version="0.7.1~dev" provider-name="rmrector">
 	<requires>
 		<import addon="xbmc.python" version="2.20.0" />
+		<import addon="script.module.simplejson" version="3.3.0"/>
 	</requires>
 	<extension point="xbmc.python.script" library="script.py" />
 	<extension point="xbmc.addon.metadata">
