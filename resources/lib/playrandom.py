@@ -178,8 +178,10 @@ class RandomPlayer(object):
     def _get_randomepisodes_by_category(self, category=None, category_id=None, category_label=None, showfilter=None, watchmode=WATCHMODE_ALLVIDEOS):
         json_request = pykodi.get_base_json_request('VideoLibrary.GetTVShows')
         json_request['params']['sort'] = {'method': 'random'}
-        json_request['params']['limits'] = {'end': self.limit_length}
-        json_request['params']['properties'] = ['file']
+        if watchmode == WATCHMODE_ALLVIDEOS:
+            # Can't combine simple category filters based on library path with playcount filter, so we can only limit ALLVIDEOS here
+            json_request['params']['limits'] = {'end': self.limit_length}
+        json_request['params']['properties'] = ['file', 'playcount']
 
         if not showfilter:
             category = self.category_lookup.get(category, category)
@@ -188,19 +190,21 @@ class RandomPlayer(object):
             elif category_label:
                 category_value = category_label
             showfilter = {category: category_value}
-
-        if watchmode == WATCHMODE_UNWATCHED:
-            json_request['params']['filter'] = {'and': [showfilter, unplayed_filter]}
-        elif watchmode == WATCHMODE_WATCHED:
-            json_request['params']['filter'] = {'and': [showfilter, played_filter]}
-        else:
-            json_request['params']['filter'] = showfilter
+        json_request['params']['filter'] = showfilter
 
         json_result = pykodi.execute_jsonrpc(json_request)
         if 'result' in json_result and 'tvshows' in json_result['result']:
             random_episodes = []
+            count = 0
             for show in json_result['result']['tvshows']:
-                random_episodes.extend(self._get_randomepisodes(show['tvshowid']))
+                if watchmode == WATCHMODE_UNWATCHED and show['playcount'] != 0 or watchmode == WATCHMODE_WATCHED and show['playcount'] == 0:
+                    continue
+                newepisodes = self._get_randomepisodes(show['tvshowid'])
+                if len(newepisodes):
+                    random_episodes.extend(newepisodes)
+                    count += 1
+                if count >= self.limit_length:
+                    break
             shuffle(random_episodes)
             return random_episodes[:self.limit_length]
         else:
