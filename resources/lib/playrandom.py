@@ -153,7 +153,7 @@ class RandomPlayer(object):
 
         if tvshow_id:
             json_request['params']['tvshowid'] = int(tvshow_id)
-            if season and not season == '-1':
+            if season and not season.startswith('-'):
                 json_request['params']['season'] = int(season)
 
         if watchmode == WATCHMODE_UNWATCHED:
