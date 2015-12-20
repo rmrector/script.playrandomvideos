@@ -21,7 +21,9 @@ WATCHMODE_ASKME = 'ask me'
 WATCHMODES = (WATCHMODE_ALLVIDEOS, WATCHMODE_UNWATCHED, WATCHMODE_WATCHED, WATCHMODE_ASKME)
 WATCHMODE_NONE = 'none'
 
-MAX_FILESYSTEM_LIMIT = 100
+MAX_FILESYSTEM_LIMIT = 20
+FILESYSTEM_DIRCOUNT_WARNING = 8
+FILESYSTEM_DIRCOUNT_WARNING_NEW_LIMIT = 5
 
 def _play_videos(items):
     playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
@@ -90,8 +92,18 @@ played_filter = {'field': 'playcount', 'operator': 'greaterthan', 'value':'0'}
 class RandomPlayer(object):
     def __init__(self, limit=1):
         self.limit_length = limit
+        self._reset()
+
+    def _reset(self):
+        self.file_mode = False
+        self.dircount = 0
+
+    @property
+    def filewarning(self):
+        return self.file_mode and self.dircount > FILESYSTEM_DIRCOUNT_WARNING
 
     def play_randomvideos_from_path(self, path):
+        self._reset()
         path['watchmode'] = _get_watchmode(path)
         if path['watchmode'] == WATCHMODE_NONE:
             # Dear viewer backed out of the selection
@@ -118,8 +130,8 @@ class RandomPlayer(object):
         elif path['type'] == 'musicdb':
             return # Nono, not music
         else:
-            # probably file system, limit the max size because descending into many directories can be painful
-            self.limit_length = min(self.limit_length, MAX_FILESYSTEM_LIMIT)
+            # probably file system, set flag to watch directory count
+            self.file_mode = True
 
         if videos == None:
             videos = self._get_randomvideos_from_path(path['full path'], path['watchmode'])
@@ -217,20 +229,30 @@ class RandomPlayer(object):
 
     skip_foldernames = ('extrafanart', 'extrathumbs')
     def _recurse_randomvideos_from_path(self, fullpath, watchmode=WATCHMODE_ALLVIDEOS, depth=3):
+        self.dircount += 1
         json_request = pykodi.get_base_json_request('Files.GetDirectory')
         json_request['params'] = {'directory': fullpath, 'media': 'video'}
+        json_request['params']['sort'] = {'method': 'random'}
 
-        if watchmode != WATCHMODE_ALLVIDEOS:
-            # 'Files.GetDirectory' can't be filtered, grab playcount and a lot more extras and we'll filter in the loop later
-            json_request['params']['properties'] = ['playcount']
-            json_request['params']['limits'] = {'end': self.limit_length * 20}
-        elif not fullpath.startswith('videodb'):
-            # for files, sample from more directories so random doesn't clump up too much under one directory
-            json_request['params']['limits'] = {'end': self.limit_length * 2}
+        if self.file_mode:
+            if self.filewarning:
+                limit = min(self.limit_length, MAX_FILESYSTEM_LIMIT)
+            else:
+                limit = self.limit_length
+        else:
+            if watchmode != WATCHMODE_ALLVIDEOS:
+                # 'Files.GetDirectory' can't be filtered, grab playcount and a lot more extras and we'll filter in the loop later
+                json_request['params']['properties'] = ['playcount']
+                limit = self.limit_length * 20
+            else:
+                limit = self.limit_length
+
+        json_request['params']['limits'] = {'end': limit}
 
         json_result = pykodi.execute_jsonrpc(json_request)
         if 'result' in json_result and 'files' in json_result['result']:
             result = []
+            local_warning_dircount = 0
             for result_file in json_result['result']['files']:
                 if result_file['file'].endswith(('.m3u', '.pls', '.cue')):
                     # m3u acts as a directory but "'media': 'video'" doesn't filter out flac/mp3/etc like real directories; the others probably do the same.
@@ -238,7 +260,9 @@ class RandomPlayer(object):
                 if result_file['label'] in self.skip_foldernames:
                     continue
                 if result_file['filetype'] == 'directory':
-                    if depth > 0:
+                    if depth > 0 and local_warning_dircount < FILESYSTEM_DIRCOUNT_WARNING_NEW_LIMIT:
+                        if self.filewarning:
+                            local_warning_dircount += 1
                         result.extend(self._recurse_randomvideos_from_path(result_file['file'], watchmode, depth - 1))
                 else:
                     if watchmode == WATCHMODE_ALLVIDEOS:
@@ -251,7 +275,8 @@ class RandomPlayer(object):
                         result.append(result_file)
 
             shuffle(result)
-            return result[:self.limit_length]
-        else:
+            return result[:MAX_FILESYSTEM_LIMIT if self.filewarning else self.limit_length]
+        elif 'error' in json_result:
             log(json_result, xbmc.LOGWARNING)
-            return []
+
+        return []
