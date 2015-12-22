@@ -4,8 +4,6 @@ A Kodi add-on to play random videos. This script can play random episodes from T
 ### Settings
 There are add-on settings to set the default watched filter for each video library section, 'movies', 'TV shows', and 'music videos'. The available options are 'All videos', only 'Unwatched', only 'Watched', and 'Ask me', which prompts you each time the script is run.
 
-Settings can be found 
-
 ## Skin usage
 Skins can use it with an action like so: `RunScript(script.playrandomvideos, "<list path>", "label=<list label>")`.
 

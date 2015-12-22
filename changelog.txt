@@ -1,4 +1,6 @@
-v1.0.0
+v1.0.1 (2015-12-22)
+- Small text changes
+v1.0.0 (2015-12-20)
 - Localize setting options
 - Rework files to limit list based on # of directories
 - Use simplejson if not running Python 2.7
