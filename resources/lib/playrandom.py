@@ -46,6 +46,8 @@ def _get_watchmode(path):
             option = WATCHMODE_UNWATCHED
         elif path['forcewatchmode'] == xbmc.getLocalizedString(WATCHMODE_WATCHED_LOCALIZE_ID):
             option = WATCHMODE_WATCHED
+        elif path['forcewatchmode'] == xbmc.getLocalizedString(WATCHMODE_ASKME_LOCALIZE_ID):
+            option = WATCHMODE_ASKME
 
     if not option:
         addon = xbmcaddon.Addon()
