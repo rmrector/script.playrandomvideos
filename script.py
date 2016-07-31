@@ -3,6 +3,7 @@ import sys
 import urlparse
 import xbmc
 import xbmcaddon
+import json
 
 addon = xbmcaddon.Addon()
 resourcelibs = xbmc.translatePath(addon.getAddonInfo('path')).decode('utf-8')
@@ -10,8 +11,7 @@ resourcelibs = os.path.join(resourcelibs, u'resources', u'lib')
 sys.path.append(resourcelibs)
 
 import playrandom
-
-from pykodi import log
+from pykodi import log, UTF8JSONDecoder
 
 ignoredtypes = ('', 'addons', 'sources', 'plugin')
 
@@ -27,9 +27,7 @@ def main():
     pathinfo = get_pathinfo()
     if pathinfo['type'] in ignoredtypes:
         return
-    limit = int(pathinfo.get('limit', 1))
-    randomplayer = playrandom.RandomPlayer(limit)
-    randomplayer.play_randomvideos_from_path(pathinfo)
+    playrandom.play(pathinfo)
 
 def get_pathinfo():
     pathinfo = {}
@@ -44,9 +42,13 @@ def get_pathinfo():
     query = urlparse.parse_qs(db_path[1]) if len(db_path) > 1 else None
     db_path = db_path[0].rstrip('/').split('/')
 
+    if query and query.get('xsp'):
+        query['xsp'] = json.loads(query['xsp'][0], cls=UTF8JSONDecoder)
+
     pathinfo['path'] = db_path
     pathinfo['type'] = path_type
-    pathinfo['query'] = query
+    if query:
+        pathinfo['query'] = query
 
     return pathinfo
 

@@ -31,3 +31,7 @@ msgstr ""
 msgctxt "#32903"
 msgid "Filter music videos by:"
 msgstr ""
+
+msgctxt "#32904"
+msgid "Filter other videos by:"
+msgstr ""

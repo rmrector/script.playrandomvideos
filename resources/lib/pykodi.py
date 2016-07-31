@@ -2,17 +2,30 @@ import collections
 import sys
 import xbmc
 import xbmcaddon
+from datetime import datetime
 
 if sys.version_info < (2, 7):
     import simplejson as json
 else:
     import json
 
+datetime.strptime('2112-04-01', '%Y-%m-%d')
+
+_main_addon = None
+def get_main_addon():
+    global _main_addon
+    if not _main_addon:
+        _main_addon = xbmcaddon.Addon()
+    return _main_addon
+
+def localize(messageid):
+    if messageid >= 32000 and messageid < 33000:
+        return get_main_addon().getLocalizedString(messageid)
+    return xbmc.getLocalizedString(messageid)
+
 def execute_jsonrpc(jsonrpc_command):
     if isinstance(jsonrpc_command, dict):
-        jsonrpc_command = json.dumps(jsonrpc_command, ensure_ascii=False)
-        if isinstance(jsonrpc_command, unicode):
-            jsonrpc_command = jsonrpc_command.encode('utf-8')
+        jsonrpc_command = json.dumps(jsonrpc_command)
 
     json_result = xbmc.executeJSONRPC(jsonrpc_command)
     return json.loads(json_result, cls=UTF8JSONDecoder)
@@ -20,25 +33,24 @@ def execute_jsonrpc(jsonrpc_command):
 def get_base_json_request(method):
     return {'jsonrpc': '2.0', 'method': method, 'params': {}, 'id': 1}
 
-def log(message, level=xbmc.LOGDEBUG):
-    addonid = xbmcaddon.Addon().getAddonInfo('id')
-
-    if isinstance(message, (dict, list, tuple)):
-        message = json.dumps(message, skipkeys=True, ensure_ascii=False, indent=2, cls=LogJSONEncoder)
-        if isinstance(message, unicode):
-            message = message.encode('utf-8')
-    elif isinstance(message, unicode):
+def log(message, level=xbmc.LOGNOTICE):
+    if isinstance(message, unicode):
         message = message.encode('utf-8')
     elif not isinstance(message, str):
-        message = str(message)
+        message = json.dumps(message, cls=LogJSONEncoder)
 
-    file_message = '[%s] %s' % (addonid, message)
+    file_message = '[%s] %s' % (get_main_addon().getAddonInfo('id'), message)
     xbmc.log(file_message, level)
 
 class LogJSONEncoder(json.JSONEncoder):
+    def __init__(self, *args, **kwargs):
+        kwargs['skipkeys'] = True
+        kwargs['ensure_ascii'] = False
+        kwargs['indent'] = 2
+        kwargs['separators'] = (',', ': ')
+        super(LogJSONEncoder, self).__init__(*args, **kwargs)
+
     def default(self, obj):
-        if isinstance(obj, (dict, list, basestring)):
-            return obj
         if isinstance(obj, collections.Mapping):
             return dict((key, obj[key]) for key in obj.keys())
         if isinstance(obj, collections.Iterable):
@@ -47,10 +59,13 @@ class LogJSONEncoder(json.JSONEncoder):
             return obj.__dict__
         return str(obj)
 
-class UTF8JSONDecoder(json.JSONDecoder):
-    def __init__(self, *args, **kwargs):
-        super(UTF8JSONDecoder, self).__init__(*args, **kwargs)
+    def iterencode(self, obj, _one_shot=False):
+        for result in super(LogJSONEncoder, self).iterencode(obj, _one_shot):
+            if isinstance(result, unicode):
+                result = result.encode('utf-8')
+            yield result
 
+class UTF8JSONDecoder(json.JSONDecoder):
     def raw_decode(self, s, idx=0):
         result, end = super(UTF8JSONDecoder, self).raw_decode(s)
         result = self._json_unicode_to_str(result)
