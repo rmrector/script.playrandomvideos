@@ -1,3 +1,4 @@
+import xbmc
 from os.path import basename
 from collections import deque
 from random import shuffle
@@ -19,8 +20,8 @@ def get_generator(content, info):
     elif content == 'other':
         return RandomJSONDirectoryGenerator(info['path'], info['watchmode'])
     else:
-        log("I know nothing")
-        log({'content': content, 'info': info})
+        log("I don't know what to do with this:", xbmc.LOGWARNING)
+        log({'content': content, 'info': info}, xbmc.LOGWARNING)
 
 class RandomFilterableJSONGenerator(object):
     def __init__(self, source_function, filters=None, loadcount=25):

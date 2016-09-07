@@ -2,7 +2,7 @@ import xbmcaddon
 import xbmcgui
 
 import quickjson
-from pykodi import log, localize as L
+from pykodi import localize as L
 from player import get_player
 from generators import get_generator
 

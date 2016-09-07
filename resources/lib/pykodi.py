@@ -48,7 +48,7 @@ def execute_jsonrpc(jsonrpc_command):
 def get_base_json_request(method):
     return {'jsonrpc': '2.0', 'method': method, 'params': {}, 'id': 1}
 
-def log(message, level=xbmc.LOGNOTICE):
+def log(message, level=xbmc.LOGDEBUG):
     if isinstance(message, unicode):
         message = message.encode('utf-8')
     elif not isinstance(message, str):
