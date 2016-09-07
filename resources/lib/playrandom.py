@@ -46,8 +46,8 @@ def _parse_path(pathinfo):
     skip_path = False
     result = {}
     filters = []
-    path_len = len(pathinfo['path'])
     if pathinfo['type'] == 'videodb':
+        path_len = len(pathinfo['path'])
         firstpath = pathinfo['path'][0] if path_len else None
         if path_len > 1:
             category = pathinfo['path'][1]

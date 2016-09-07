@@ -36,16 +36,19 @@ def get_pathinfo():
         pathinfo[arg[0].strip().lower()] = arg[1].strip() if len(arg) > 1 else True
 
     pathinfo['full path'] = sys.argv[1]
-
-    path_type, db_path = pathinfo['full path'].split('://')
-    db_path = db_path.split('?', 1)
-    query = urlparse.parse_qs(db_path[1]) if len(db_path) > 1 else None
-    db_path = db_path[0].rstrip('/').split('/')
+    if pathinfo['full path'].startswith('/') or '://' not in pathinfo['full path']:
+        path_type = 'other'
+        query = None
+    else:
+        path_type, db_path = pathinfo['full path'].split('://', 1)
+        db_path = db_path.split('?', 1)
+        query = urlparse.parse_qs(db_path[1]) if len(db_path) > 1 else None
+        db_path = db_path[0].rstrip('/').split('/')
+        pathinfo['path'] = db_path
 
     if query and query.get('xsp'):
         query['xsp'] = json.loads(query['xsp'][0], cls=UTF8JSONDecoder)
 
-    pathinfo['path'] = db_path
     pathinfo['type'] = path_type
     if query:
         pathinfo['query'] = query
