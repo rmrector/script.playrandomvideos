@@ -1,23 +1,21 @@
 # Play Random Videos
 A Kodi add-on to quickly play random videos from (nearly) any list. This add-on can
 play random episodes from TV shows, movies from genres/sets/years/tags, and videos
-from playlists, filesystems, and just about anything else, other than plugins. This
-add-on does not directly add functionality on its own and must be supported by skins
+from playlists, filesystems, and just about anything else, other than plugins.
+
+This add-on does not directly add functionality on its own and must be supported by skins
 or other add-ons. Try the Context item "Play Random Video" add-on to play a random
 video from any supported list, right from the context menu.
 
 ## Settings
-There are add-on settings to set the default watched filter for each video library
-section, 'movies', 'TV shows', and 'music videos'. The available options are
-'All videos', only 'Unwatched', only 'Watched', and 'Ask me', which prompts you each
-time the script is run.
+There are add-on settings to set a (un)watched filter for different video library sections.
 
 ## Skin usage
-Skins can use it with an action like so: `RunScript(script.playrandomvideos, "<list path>",
+Skins can use it with an action like so: `RunScript(script.playrandomvideos, <list path>,
 "label=<list label>")`.
 
 List path is the path to the list to play, like ListItem.FolderPath, which should be
-escaped (`$ESCINFO[]`) or wrapped in quotation marks. *label* is the list name, like
+escaped (`$ESCINFO[]`). *label* is the list name, like
 ListItem.Label, and is required when available, also escaped/quoted. There is an optional
 argument *watchmode*, which can override the default watch mode selected in the add-on settings.
 
@@ -32,7 +30,7 @@ A label is available with `$ADDON[script.playrandomvideos 32100]`, 'Play Random'
 
 *watchmode* accepts 'Unwatched', 'Watched', and 'Ask me', as well
 as their localized equivalents with these IDs: `16101`, `16102`, and `36521`.
-In **MyVideoNav.xml**, `watchmode=$INFO[Control.GetLabel(10)]` should always
+In **MyVideoNav.xml**, `watchmode=$INFO[Control.GetLabel(10)]` should
 match the behavior of the button that switches between watched/unwatched/all,
 if it is on your window.
 
