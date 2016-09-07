@@ -9,7 +9,14 @@ if sys.version_info < (2, 7):
 else:
     import json
 
-datetime.strptime('2112-04-01', '%Y-%m-%d')
+try:
+    # The result is not needed, it is just to prep the datetime module
+    # to avoid ImportError from datetime.now()
+    datetime.strptime('2112-04-01', '%Y-%m-%d')
+except TypeError:
+    # With the error, datetime.now() MAY still encounter an ImportError,
+    #  use pykodi.datetime_now() to sleep it off
+    pass
 
 _main_addon = None
 def get_main_addon():
@@ -22,6 +29,14 @@ def localize(messageid):
     if messageid >= 32000 and messageid < 33000:
         return get_main_addon().getLocalizedString(messageid)
     return xbmc.getLocalizedString(messageid)
+
+def datetime_now():
+    ''' Catches ImportError (due to an import lock) and sleeps it off. '''
+    try:
+        return datetime.now()
+    except ImportError:
+        xbmc.sleep(50)
+        return datetime_now()
 
 def execute_jsonrpc(jsonrpc_command):
     if isinstance(jsonrpc_command, dict):

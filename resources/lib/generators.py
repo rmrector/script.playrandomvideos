@@ -1,10 +1,9 @@
 from os.path import basename
-from datetime import datetime
 from collections import deque
 from random import shuffle
 
 import quickjson
-from pykodi import log
+from pykodi import log, datetime_now
 
 WATCHMODE_UNWATCHED = 'unwatched'
 WATCHMODE_WATCHED = 'watched'
@@ -34,7 +33,7 @@ class RandomFilterableJSONGenerator(object):
         """
         self.source_function = source_function
 
-        self.filters = [{'field': 'lastplayed', 'operator': 'lessthan', 'value': datetime.now().isoformat(' ')}]
+        self.filters = [{'field': 'lastplayed', 'operator': 'lessthan', 'value': datetime_now().isoformat(' ')}]
         if filters:
             self.filters.extend(filters)
         self.limit = loadcount
@@ -73,7 +72,7 @@ class RandomJSONDirectoryGenerator(object):
 
         self.readylist = deque()
         self.lastresults = deque(maxlen=loadcount)
-        self.started = datetime.now().isoformat(' ')
+        self.started = datetime_now().isoformat(' ')
 
     def __iter__(self):
         return self
