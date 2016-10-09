@@ -8,12 +8,15 @@ from generators import get_generator
 
 SELECTWATCHMODE_HEADING = 32010
 WATCHMODE_ALLVIDEOS_TEXT = 16100
-WATCHMODE_ALLVIDEOS = 'all videos'
 WATCHMODE_UNWATCHED_TEXT = 16101
 WATCHMODE_WATCHED_TEXT = 16102
+WATCHMODE_ASKME_TEXT = 36521
+ADD_SOURCE_HEADER = 32011
+ADD_SOURCE_MESSAGE = 32012
+
+WATCHMODE_ALLVIDEOS = 'all videos'
 WATCHMODE_UNWATCHED = 'unwatched'
 WATCHMODE_WATCHED = 'watched'
-WATCHMODE_ASKME_TEXT = 36521
 WATCHMODE_ASKME = 'ask me'
 # Same order as settings
 WATCHMODES = (WATCHMODE_ALLVIDEOS, WATCHMODE_UNWATCHED, WATCHMODE_WATCHED, WATCHMODE_ASKME)
@@ -39,7 +42,15 @@ def play(pathinfo):
     if not content:
         return
     singlevideo = pathinfo.get('singlevideo', False)
-    get_player(get_generator(content, info), singlevideo).run()
+    try:
+        get_player(get_generator(content, info), singlevideo).run()
+    except quickjson.JSONException as ex:
+        # json_result['error']['code'] == -32602 seems to be the generic code for "cannot access file"
+        if content == 'other' and ex.json_result.get('error', {}).get('code', 0) == -32602 \
+                and not any(1 for source in quickjson.get_sources('video') if info['path'].startswith(source['file'])):
+            xbmcgui.Dialog().ok(L(ADD_SOURCE_HEADER), L(ADD_SOURCE_MESSAGE).format(info['path']))
+        else:
+            raise
 
 def _parse_path(pathinfo):
     content = None

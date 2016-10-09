@@ -96,6 +96,16 @@ def remove_from_playlist(index, playlistid=xbmc.PLAYLIST_VIDEO):
     if not _check_json_result(json_result, 'OK', json_request):
         log(json_result, xbmc.LOGWARNING)
 
+def get_sources(media='video'):
+    json_request = get_base_json_request('Files.GetSources')
+    json_request['params']['media'] = media
+
+    json_result = pykodi.execute_jsonrpc(json_request)
+    if _check_json_result(json_result, 'sources', json_request):
+        return json_result['result']['sources']
+    else:
+        return []
+
 def get_base_json_request(method):
     return {'jsonrpc': '2.0', 'method': method, 'params': {}, 'id': 1}
 

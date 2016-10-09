@@ -14,6 +14,15 @@ msgctxt "#32010"
 msgid "Filter random selection by watched status"
 msgstr ""
 
+msgctxt "#32011"
+msgid "Can not play from non-permanent video source"
+msgstr ""
+
+# {0} = path to selected directory
+msgctxt "#32012"
+msgid "Add this or a higher directory as a permanent video source and try again.[CR]{0}"
+msgstr ""
+
 # Settings
 #  heading
 msgctxt "#32900"
