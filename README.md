@@ -16,8 +16,9 @@ Skins can use it with an action like so: `RunScript(script.playrandomvideos, <li
 
 List path is the path to the list to play, like ListItem.FolderPath, which should be
 escaped (`$ESCINFO[]`). *label* is the list name, like
-ListItem.Label, and is required when available, also escaped/quoted. There is an optional
-argument *watchmode*, which can override the default watch mode selected in the add-on settings.
+ListItem.Label, and is required when available, also escaped/quoted. There are optional
+arguments *watchmode*, which can override the default watch mode selected in the add-on settings,
+and *singlevideo* to play just a single video, if you have occasion for such an action.
 
 In **MyVideoNav.xml** an action like `RunScript(script.playrandomvideos, "$INFO[Container.FolderPath]",
 "label=$INFO[Container.FolderName]", watchmode=$INFO[Control.GetLabel(10)])`
@@ -32,7 +33,7 @@ A label is available with `$ADDON[script.playrandomvideos 32100]`, 'Play Random'
 as their localized equivalents with these IDs: `16101`, `16102`, and `36521`.
 In **MyVideoNav.xml**, `watchmode=$INFO[Control.GetLabel(10)]` should
 match the behavior of the button that switches between watched/unwatched/all,
-if it is on your window.
+if it is on your window. *singlevideo* needs no value, just add `singlevideo` as an argument.
 
 ## Plugins
 It doesn't work for plugin paths :(. I would like it to, but I can't figure a good

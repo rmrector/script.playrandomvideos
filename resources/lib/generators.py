@@ -9,50 +9,54 @@ from pykodi import log, datetime_now
 WATCHMODE_UNWATCHED = 'unwatched'
 WATCHMODE_WATCHED = 'watched'
 
-def get_generator(content, info):
+def get_generator(content, info, singleresult):
     if content == 'tvshows':
         return RandomFilterableJSONGenerator(lambda filters, limit:
-            quickjson.get_random_episodes(info.get('tvshowid'), info.get('season'), filters, limit), info.get('filters'))
+            quickjson.get_random_episodes(info.get('tvshowid'), info.get('season'), filters, limit),
+            info.get('filters'), singleresult)
     elif content == 'movies':
-        return RandomFilterableJSONGenerator(quickjson.get_random_movies, info.get('filters'))
+        return RandomFilterableJSONGenerator(quickjson.get_random_movies, info.get('filters'), singleresult)
     elif content == 'musicvideos':
-        return RandomFilterableJSONGenerator(quickjson.get_random_musicvideos, info.get('filters'))
+        return RandomFilterableJSONGenerator(quickjson.get_random_musicvideos, info.get('filters'), singleresult)
     elif content == 'other':
-        return RandomJSONDirectoryGenerator(info['path'], info['watchmode'])
+        return RandomJSONDirectoryGenerator(info['path'], info['watchmode'], singleresult)
     else:
         log("I don't know what to do with this:", xbmc.LOGWARNING)
         log({'content': content, 'info': info}, xbmc.LOGWARNING)
 
 class RandomFilterableJSONGenerator(object):
-    def __init__(self, source_function, filters=None, loadcount=25):
+    def __init__(self, source_function, filters=None, singleresult=False):
         """
         Args:
             source_function: takes two parameters, a list of `filters` and `limit` count
                 returns an iterable
-            loadcount: the max number of items to load at one time. Should be at least 1 + the
-                number of upcoming items in the playlist
+            filters: a list of additional filters to be passed to the source_function
         """
         self.source_function = source_function
 
         self.filters = [{'field': 'lastplayed', 'operator': 'lessthan', 'value': datetime_now().isoformat(' ')}]
         if filters:
             self.filters.extend(filters)
-        self.limit = loadcount
+        self.singleresult = singleresult
+        self.singledone = False
 
         self.readylist = deque()
-        self.lastresults = deque(maxlen=loadcount)
+        self.lastresults = deque(maxlen=20)
 
     def __iter__(self):
         return self
 
     def next(self):
+        if self.singleresult:
+            if self.singledone:
+                raise StopIteration()
+            else:
+                self.singledone = True
         if not self.readylist:
             filters = list(self.filters)
             if len(self.lastresults):
-                filters.append({'and': [
-                    {'field': 'filename', 'operator': 'isnot', 'value': [ep for ep in self.lastresults]}
-                ]})
-            self.readylist.extend(self.source_function(filters, self.limit))
+                filters.append({'field': 'filename', 'operator': 'isnot', 'value': [ep for ep in self.lastresults]})
+            self.readylist.extend(self.source_function(filters, 1 if self.singleresult else 20))
             if not self.readylist:
                 raise StopIteration()
         result = self.readylist.popleft()
@@ -65,20 +69,26 @@ RECURSE_LIMIT = 3
 MAX_SIBLING_FILES = 2
 
 class RandomJSONDirectoryGenerator(object):
-    def __init__(self, path, watchmode, loadcount=30):
+    def __init__(self, path, watchmode, singleresult=False):
         self.path = path
         self.watchmode = watchmode
-        self.limit = loadcount
+        self.singleresult = singleresult
+        self.singledone = False
         self.dircount = 0
 
         self.readylist = deque()
-        self.lastresults = deque(maxlen=loadcount)
+        self.lastresults = deque(maxlen=25)
         self.started = datetime_now().isoformat(' ')
 
     def __iter__(self):
         return self
 
     def next(self):
+        if self.singleresult:
+            if self.singledone:
+                raise StopIteration()
+            else:
+                self.singledone = True
         if not self.readylist:
             self.readylist.extend(self.get_random())
             self.dircount = 0
@@ -101,7 +111,7 @@ class RandomJSONDirectoryGenerator(object):
     def _recurse_random_from_path(self, fullpath, depth=RECURSE_LIMIT, check_mimetype=False):
         self.dircount += 1
 
-        files = quickjson.get_directory(fullpath, self.limit)
+        files = quickjson.get_directory(fullpath)
         result = []
         warning_limit_siblings = 0
         sibling_files = 0
@@ -133,5 +143,7 @@ class RandomJSONDirectoryGenerator(object):
                     if sibling_files > MAX_SIBLING_FILES:
                         continue
                 result.append(result_file)
+            if self.singleresult and result:
+                break
 
         return result

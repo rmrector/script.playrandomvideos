@@ -8,10 +8,9 @@ EXTEND_WHEN = 3 # Add more items when there are only X left
 EXTEND_BY = 5
 REMOVE_OLDER_THAN = 4 # Keep only X previously played
 
-def get_player(source, singlevideo=False):
+def get_player(source):
     result = ChunkPlayer()
     result.source = source
-    result.singlevideo = singlevideo
     return result
 
 class ChunkPlayer(xbmc.Player):
@@ -21,7 +20,6 @@ class ChunkPlayer(xbmc.Player):
         self.playlist.clear()
         self._source = None
         self.source_exhausted = True
-        self.singlevideo = False
 
     @property
     def source(self):
@@ -54,7 +52,7 @@ class ChunkPlayer(xbmc.Player):
         for item in self._source:
             self.add_to_playlist(item)
             count += 1
-            if count >= EXTEND_BY or self.singlevideo:
+            if count >= EXTEND_BY:
                 break
         self.source_exhausted = count < EXTEND_BY
         if (self.source_exhausted):

@@ -43,7 +43,7 @@ def play(pathinfo):
         return
     singlevideo = pathinfo.get('singlevideo', False)
     try:
-        get_player(get_generator(content, info), singlevideo).run()
+        get_player(get_generator(content, info, singlevideo)).run()
     except quickjson.JSONException as ex:
         # json_result['error']['code'] == -32602 seems to be the generic code for "cannot access file"
         if content == 'other' and ex.json_result.get('error', {}).get('code', 0) == -32602 \
