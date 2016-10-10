@@ -62,20 +62,22 @@ def _parse_path(pathinfo):
         firstpath = pathinfo['path'][0] if path_len else None
         if path_len > 1:
             category = pathinfo['path'][1]
-            if firstpath == 'tvshows':
-                content = firstpath
+            if firstpath in ('tvshows', 'inprogresstvshows'):
+                content = 'tvshows'
                 if category == 'titles' and path_len <= 2:
-                    # 'xsp' 'rules' are passed from library xml files, like inprogressshows.xml
+                    # 'xsp' 'rules' are passed from library nodes
                     if _has_xsprules(pathinfo):
                         filters.append({'field': 'tvshow', 'operator': 'is', 'value': [series['label'] for
                             series in quickjson.get_tvshows(pathinfo['query']['xsp']['rules'])]})
-                elif category == 'titles' or path_len > 3:
+                elif category == 'titles' or path_len > 3 or firstpath == 'inprogresstvshows':
                     # points to specific show, disregard any series filter
-                    i = 3 if category != 'titles' else 2
-                    if path_len > i:
-                        result['tvshowid'] = int(pathinfo['path'][i])
-                    if path_len > i + 1:
-                        season = int(pathinfo['path'][i + 1])
+                    index_of_tvshowid = 1 if firstpath == 'inprogresstvshows' else \
+                        2 if category == 'titles' else 3
+
+                    if path_len > index_of_tvshowid:
+                        result['tvshowid'] = int(pathinfo['path'][index_of_tvshowid])
+                    if path_len > index_of_tvshowid + 1:
+                        season = int(pathinfo['path'][index_of_tvshowid + 1])
                         if season >= 0:
                             result['season'] = season
                 elif path_len > 2:
@@ -97,11 +99,16 @@ def _parse_path(pathinfo):
             filters.append({'field': 'tvshow', 'operator': 'is', 'value': [series['label'] for series
                 in quickjson.get_tvshows({'field': 'inprogress', 'operator':'true', 'value':''})]})
     elif pathinfo['type'] == 'library':
-        # TODO: read these from the actual XML files?
-        if pathinfo['path'][1] == 'inprogressshows.xml':
+        # TODO: read these from the actual XML files? This falls apart when Kodi changes them
+        #  or even when the viewer changes nodes!
+        if 'inprogressshows.xml' in pathinfo['path']:
             content = 'tvshows'
             filters.append({'field': 'tvshow', 'operator': 'is', 'value': [series['label'] for series
                 in quickjson.get_tvshows({'field': 'inprogress', 'operator':'true', 'value':''})]})
+        elif len(pathinfo['path']) > 2 and pathinfo['path'][2] in ('recentlyaddedmovies.xml',
+                'recentlyaddedepisodes.xml', 'recentlyaddedmusicvideos.xml'):
+            content = 'other'
+            result['path'] = pathinfo['full path']
         elif pathinfo['path'][1] == 'tvshows':
             content = 'tvshows'
         elif pathinfo['path'][1] == 'movies':
