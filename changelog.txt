@@ -3,6 +3,7 @@ v1.1.0~beta3
   removable) sources with a nice message suggesting to add the source (and fix the problem).
 - Add `singlevideo` option
 - Fix certain special library paths in Krypton, like recently added movies
+- Rework the directory crawler
 
 v1.1.0~beta2 (2016-08-06)
 - Fix error from datetime module

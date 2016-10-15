@@ -1,7 +1,8 @@
 import xbmc
 from os.path import basename
 from collections import deque
-from random import shuffle
+from random import choice, shuffle
+from time import time
 
 import quickjson
 from pykodi import log, datetime_now
@@ -63,87 +64,114 @@ class RandomFilterableJSONGenerator(object):
         self.lastresults.append(basename(result['file']))
         return result
 
-DIRCOUNT_WARNING = 8
-DIRCOUNT_WARNING_LIMIT_SIBLINGS = 4
-RECURSE_LIMIT = 3
-MAX_SIBLING_FILES = 2
-
 class RandomJSONDirectoryGenerator(object):
     def __init__(self, path, watchmode, singleresult=False):
         self.path = path
         self.watchmode = watchmode
         self.singleresult = singleresult
-        self.singledone = False
-        self.dircount = 0
+
+        self.firstrun = True
+        self.workcount = 0
 
         self.readylist = deque()
-        self.lastresults = deque(maxlen=25)
-        self.started = datetime_now().isoformat(' ')
+        self.unuseddirs = set()
+        self.unuseddirs.add(path)
+        self.unuseditems = []
 
     def __iter__(self):
         return self
 
     def next(self):
         if self.singleresult:
-            if self.singledone:
+            if not self.firstrun:
                 raise StopIteration()
-            else:
-                self.singledone = True
         if not self.readylist:
-            self.readylist.extend(self.get_random())
-            self.dircount = 0
+            self.readylist.extend(self._get_random())
             if not self.readylist:
                 raise StopIteration()
+            self.firstrun = False
+            self.workcount = 0
+        else:
+            self.workcount = self.workcount + 1 % 3
+            if self.workcount == 0:
+                self._fill_random()
         result = self.readylist.popleft()
-        self.lastresults.append(result['file'])
         return result
 
-    @property
-    def filewarning(self):
-        return self.dircount > DIRCOUNT_WARNING
+    def _pop_randomdir(self):
+        if not len(self.unuseddirs):
+            return None
+        result = choice(tuple(self.unuseddirs))
+        self.unuseddirs.remove(result)
+        return result
 
-    def get_random(self):
-        result = self._recurse_random_from_path(self.path)
+    def _pop_randomitem(self):
+        if not self.unuseditems:
+            return None
+        result = choice(tuple(self.unuseditems))
+        self.unuseditems.remove(result)
+        return result
+
+    def _get_random(self):
+        dirs, files = self._get_next_files()
+        self.unuseddirs |= dirs
+        if not files: # We're out of directories and files, load up the last of the items
+            shuffle(self.unuseditems)
+            return self.unuseditems
+
+        result = [choice(tuple(files))]
+        files.remove(result[0])
+        newitem = self._pop_randomitem()
+        if newitem:
+            result.append(newitem)
+        self.unuseditems.extend(files)
         shuffle(result)
         return result
 
-    skip_foldernames = ('extrafanart', 'extrathumbs')
-    def _recurse_random_from_path(self, fullpath, depth=RECURSE_LIMIT, check_mimetype=False):
-        self.dircount += 1
+    def _fill_random(self):
+        dirs, files = self._get_next_files()
+        self.unuseddirs |= dirs
+        self.unuseditems.extend(files)
 
-        files = quickjson.get_directory(fullpath)
-        result = []
-        warning_limit_siblings = 0
-        sibling_files = 0
-        for result_file in files:
-            if result_file['filetype'] == 'directory':
-                if result_file['label'] in self.skip_foldernames:
-                    continue
-                next_depth = depth
-                if self.filewarning:
-                    next_depth -= 1
-                    warning_limit_siblings += 1
-                if next_depth > 0 and warning_limit_siblings <= DIRCOUNT_WARNING_LIMIT_SIBLINGS:
-                    next_check_mimetype = result_file['file'].endswith(('.m3u', '.pls', '.cue'))
-                    result.extend(self._recurse_random_from_path(result_file['file'], next_depth - 1, next_check_mimetype))
-            else:
-                if check_mimetype and not result_file['mimetype'].startswith(('video', 'audio')):
-                    continue
-                if result_file.get('lastplayed') > self.started:
-                    continue
-                if result_file['file'] in self.lastresults:
-                    continue
-                if self.watchmode == WATCHMODE_UNWATCHED and result_file['playcount'] > 0:
-                    continue
-                if self.watchmode == WATCHMODE_WATCHED and result_file['playcount'] == 0:
-                    continue
-                if depth < RECURSE_LIMIT:
-                    # Limit sibling files when we're not in the top directory
-                    sibling_files += 1
-                    if sibling_files > MAX_SIBLING_FILES:
-                        continue
-                result.append(result_file)
-            if self.singleresult and result:
+    def _get_next_files(self):
+        path_to_use = self._pop_randomdir()
+        files = ()
+        result_dirs = set()
+        if not path_to_use:
+            return result_dirs, files
+        if self.firstrun:
+            timeout = time() + 10
+        while not files and path_to_use:
+            log("Listing '{0}'".format(path_to_use), xbmc.LOGINFO)
+            dirs, files = self._get_random_from_path(path_to_use)
+            result_dirs |= dirs
+            if self.firstrun and time() > timeout:
+                log("Timeout reached", xbmc.LOGINFO)
                 break
+            if not files:
+                log("No items found", xbmc.LOGINFO)
+                path_to_use = self._pop_randomdir()
+                if not path_to_use and result_dirs:
+                    path_to_use = choice(tuple(result_dirs))
+                    result_dirs.remove(path_to_use)
+        return result_dirs, files
 
-        return result
+    def _get_random_from_path(self, fullpath):
+        files = quickjson.get_directory(fullpath)
+        result_dirs = set()
+        result_files = []
+        for dfile in files:
+            if dfile['filetype'] == 'directory':
+                result_dirs.add(dfile['file'])
+            else:
+                check_mimetype = fullpath.endswith(('.m3u', '.pls', '.cue'))
+                if check_mimetype and not dfile['mimetype'].startswith('video'):
+                    continue
+                if self.watchmode == WATCHMODE_UNWATCHED and dfile['playcount'] > 0:
+                    continue
+                if self.watchmode == WATCHMODE_WATCHED and dfile['playcount'] == 0:
+                    continue
+                result_files.append(dfile)
+                if self.singleresult:
+                    break
+        return result_dirs, result_files
