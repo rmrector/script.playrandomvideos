@@ -3,9 +3,8 @@ A Kodi add-on to quickly play random videos from (nearly) any list. This add-on 
 play random episodes from TV shows, movies from genres/sets/years/tags, and videos
 from playlists, filesystems, and just about anything else, other than plugins.
 
-This add-on does not directly add functionality on its own and must be supported by skins
-or other add-ons. Try the Context item "Play Random Video" add-on to play a random
-video from any supported list, right from the context menu.
+It adds a context item to most playable lists when navigating videos, and also provides a script
+that can be executed by skins with `RunScript` and JSON-RPC with `Addons.ExecuteAddon`.
 
 ## Settings
 There are add-on settings to set a (un)watched filter for different video library sections.

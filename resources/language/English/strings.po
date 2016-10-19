@@ -9,6 +9,14 @@ msgctxt "#32100"
 msgid "Play Random"
 msgstr ""
 
+msgctxt "#32101"
+msgid "Disable 'Play Random' context item [I](per skin)[/I]"
+msgstr ""
+
+msgctxt "#32102"
+msgid "Enable 'Play Random' context item [I](per skin)[/I]"
+msgstr ""
+
 # Headings
 msgctxt "#32010"
 msgid "Filter random selection by watched status"

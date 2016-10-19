@@ -1,5 +1,6 @@
 import collections
 import sys
+import urlparse
 import xbmc
 import xbmcaddon
 from datetime import datetime
@@ -47,6 +48,33 @@ def execute_jsonrpc(jsonrpc_command):
 
 def get_base_json_request(method):
     return {'jsonrpc': '2.0', 'method': method, 'params': {}, 'id': 1}
+
+ignoredtypes = ('', 'addons', 'sources', 'plugin')
+def get_pathinfo(path):
+    result = {}
+    if path.startswith('/') or '://' not in path:
+        path_type = 'other'
+        query = None
+    else:
+        path_type, db_path = path.split('://', 1)
+        db_path = db_path.split('?', 1)
+        query = urlparse.parse_qs(db_path[1]) if len(db_path) > 1 else None
+        db_path = db_path[0].rstrip('/').split('/')
+        result['path'] = db_path
+
+    if path_type in ignoredtypes:
+        return
+    if query and query.get('xsp'):
+        try:
+            query['xsp'] = json.loads(query['xsp'][0], cls=UTF8JSONDecoder)
+        except ValueError:
+            del query['xsp']
+
+    result['type'] = path_type
+    if query:
+        result['query'] = query
+
+    return result
 
 def log(message, level=xbmc.LOGDEBUG):
     if isinstance(message, unicode):
