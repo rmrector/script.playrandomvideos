@@ -1,4 +1,4 @@
-v1.1.0~beta3
+v1.1.0~beta3 (2016-10-19)
 - Replace ugly error message when playing from non-permanent (auto-mounted, external,
   removable) sources with a nice message suggesting to add the source (fixing the problem).
 - Add `singlevideo` option to RunScript
