@@ -1,6 +1,6 @@
 # Kodi Media Center language file
 # Addon Name: Play Random Videos
-# Addon id: script.playrandomvideo
+# Addon id: script.playrandomvideos
 msgid ""
 msgstr ""
 

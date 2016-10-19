@@ -27,6 +27,8 @@ def get_main_addon():
     return _main_addon
 
 def localize(messageid):
+    if isinstance(messageid, basestring):
+        return messageid
     if messageid >= 32000 and messageid < 33000:
         return get_main_addon().getLocalizedString(messageid)
     return xbmc.getLocalizedString(messageid)

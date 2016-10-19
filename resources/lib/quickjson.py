@@ -109,13 +109,8 @@ def get_sources(media='video'):
 def get_base_json_request(method):
     return {'jsonrpc': '2.0', 'method': method, 'params': {}, 'id': 1}
 
-def filter_and(*operator_args):
-    filters = [arg for arg in operator_args if arg]
-    if not filters:
-        return None
-    if len(filters) == 1:
-        return filters[0]
-    return {'and': filters}
+def filter_and(*filters):
+    return {'and': [arg for arg in filters if arg]}
 
 def _check_json_result(json_result, result_key, json_request):
     if 'error' in json_result:
