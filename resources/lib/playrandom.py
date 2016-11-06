@@ -40,6 +40,7 @@ played_filter = {'field': 'playcount', 'operator': 'greaterthan', 'value': '0'}
 def play(pathinfo):
     content, info = _parse_path(pathinfo)
     if not content:
+        xbmcgui.Dialog().notification(L(34201), pathinfo['full path'])
         return
     singlevideo = pathinfo.get('singlevideo', False)
     try:

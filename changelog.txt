@@ -1,3 +1,6 @@
+v1.1.0
+- Show notification if a directory can't be played
+
 v1.1.0~beta3 (2016-10-19)
 - Replace ugly error message when playing from non-permanent (auto-mounted, external,
   removable) sources with a nice message suggesting to add the source (fixing the problem).
