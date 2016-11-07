@@ -1,7 +1,7 @@
 import xbmc
 from os.path import basename
 from collections import deque
-from random import choice, shuffle
+from random import choice
 from time import time
 
 import quickjson
@@ -65,73 +65,63 @@ class RandomFilterableJSONGenerator(object):
         return result
 
 class RandomJSONDirectoryGenerator(object):
+    FIRST_CHUNK_SIZE = 20
+    FIRST_TIMEOUT = 15
+
     def __init__(self, path, watchmode, singleresult=False):
-        self.path = path
         self.watchmode = watchmode
         self.singleresult = singleresult
 
-        self.firstrun = True
-        self.workcount = 0
-
-        self.readylist = deque()
-        self.unuseddirs = set()
-        self.unuseddirs.add(path)
+        self.tick = 0
+        self.firstbatch = set()
+        self.unuseddirs = set((path,))
         self.unuseditems = []
+        self.firstlist = True
 
     def __iter__(self):
         return self
 
     def next(self):
-        if self.singleresult:
-            if not self.firstrun:
-                raise StopIteration()
-        if not self.readylist:
-            self.readylist.extend(self._get_random())
-            if not self.readylist:
-                raise StopIteration()
-            self.firstrun = False
-            self.workcount = 0
-        else:
-            self.workcount = self.workcount + 1 % 3
-            if self.workcount == 0:
-                self._fill_random()
-        result = self.readylist.popleft()
+        if self.singleresult and self.tick:
+            raise StopIteration()
+
+        result = None
+        if self.tick == 1:
+            result = self._pop_randomitem()
+        if not result:
+            result = self._get_item_from_nextpath()
+        if not result: # still
+            raise StopIteration()
+
+        self.tick = 1 if self.tick != 1 else 2
         return result
 
-    def _pop_randomdir(self):
-        if not len(self.unuseddirs):
-            return None
-        result = choice(tuple(self.unuseddirs))
-        self.unuseddirs.remove(result)
+    def _pop_randomdir(self, secondaryset=None):
+        useset = self.unuseddirs or secondaryset
+        result = None
+        if useset:
+            result = choice(tuple(useset))
+            useset.remove(result)
         return result
 
-    def _pop_randomitem(self):
-        if not self.unuseditems:
-            return None
-        result = choice(tuple(self.unuseditems))
-        self.unuseditems.remove(result)
+    def _pop_randomitem(self, secondarylist=None):
+        uselist = self.unuseditems or secondarylist
+        result = None
+        if uselist:
+            result = choice(uselist)
+            uselist.remove(result)
         return result
 
-    def _get_random(self):
+    def _get_item_from_nextpath(self):
         dirs, files = self._get_next_files()
         self.unuseddirs |= dirs
-        if not files: # We're out of directories and files, load up the last of the items
-            shuffle(self.unuseditems)
-            return self.unuseditems
+        if not files:
+            return self._pop_randomitem()
 
-        result = [choice(tuple(files))]
-        files.remove(result[0])
-        newitem = self._pop_randomitem()
-        if newitem:
-            result.append(newitem)
+        result = choice(tuple(files))
+        files.remove(result)
         self.unuseditems.extend(files)
-        shuffle(result)
         return result
-
-    def _fill_random(self):
-        dirs, files = self._get_next_files()
-        self.unuseddirs |= dirs
-        self.unuseditems.extend(files)
 
     def _get_next_files(self):
         path_to_use = self._pop_randomdir()
@@ -139,39 +129,40 @@ class RandomJSONDirectoryGenerator(object):
         result_dirs = set()
         if not path_to_use:
             return result_dirs, files
-        if self.firstrun:
-            timeout = time() + 10
+        if not self.tick:
+            timeout = time() + self.FIRST_TIMEOUT
         while not files and path_to_use:
             log("Listing '{0}'".format(path_to_use), xbmc.LOGINFO)
             dirs, files = self._get_random_from_path(path_to_use)
             result_dirs |= dirs
-            if self.firstrun and time() > timeout:
+            if not self.tick and time() > timeout:
                 log("Timeout reached", xbmc.LOGINFO)
                 break
             if not files:
-                log("No items found", xbmc.LOGINFO)
-                path_to_use = self._pop_randomdir()
-                if not path_to_use and result_dirs:
-                    path_to_use = choice(tuple(result_dirs))
-                    result_dirs.remove(path_to_use)
+                path_to_use = self._pop_randomdir(result_dirs)
         return result_dirs, files
 
     def _get_random_from_path(self, fullpath):
-        files = quickjson.get_directory(fullpath)
+        files = quickjson.get_directory(fullpath, self.FIRST_CHUNK_SIZE if self.firstlist else None)
         result_dirs = set()
         result_files = []
+        check_mimetype = fullpath.endswith(('.m3u', '.pls', '.cue'))
         for dfile in files:
+            if dfile['file'] in self.firstbatch:
+                self.firstbatch.remove(dfile['file'])
+                continue
             if dfile['filetype'] == 'directory':
                 result_dirs.add(dfile['file'])
             else:
-                check_mimetype = fullpath.endswith(('.m3u', '.pls', '.cue'))
-                if check_mimetype and not dfile['mimetype'].startswith('video'):
-                    continue
-                if self.watchmode == WATCHMODE_UNWATCHED and dfile['playcount'] > 0:
-                    continue
-                if self.watchmode == WATCHMODE_WATCHED and dfile['playcount'] == 0:
+                if check_mimetype and not dfile['mimetype'].startswith('video') or \
+                        self.watchmode == WATCHMODE_UNWATCHED and dfile['playcount'] > 0 or \
+                        self.watchmode == WATCHMODE_WATCHED and dfile['playcount'] == 0:
                     continue
                 result_files.append(dfile)
                 if self.singleresult:
                     break
+        if self.firstlist and len(files) == self.FIRST_CHUNK_SIZE:
+            self.firstbatch = set(dfile['file'] for dfile in files)
+            self.unuseddirs.add(fullpath)
+        self.firstlist = False
         return result_dirs, result_files
