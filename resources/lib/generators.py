@@ -125,44 +125,44 @@ class RandomJSONDirectoryGenerator(object):
 
     def _get_next_files(self):
         path_to_use = self._pop_randomdir()
-        files = ()
+        result_files = ()
         result_dirs = set()
         if not path_to_use:
-            return result_dirs, files
+            return result_dirs, result_files
         if not self.tick:
             timeout = time() + self.FIRST_TIMEOUT
-        while not files and path_to_use:
+        while not result_files and path_to_use:
             log("Listing '{0}'".format(path_to_use), xbmc.LOGINFO)
-            dirs, files = self._get_random_from_path(path_to_use)
-            result_dirs |= dirs
+            newdirs, result_files = self._get_random_from_path(path_to_use)
+            result_dirs |= newdirs
             if not self.tick and time() > timeout:
                 log("Timeout reached", xbmc.LOGINFO)
                 break
-            if not files:
+            if not result_files:
                 path_to_use = self._pop_randomdir(result_dirs)
-        return result_dirs, files
+        return result_dirs, result_files
 
     def _get_random_from_path(self, fullpath):
         files = quickjson.get_directory(fullpath, self.FIRST_CHUNK_SIZE if self.firstlist else None)
         result_dirs = set()
         result_files = []
         check_mimetype = fullpath.endswith(('.m3u', '.pls', '.cue'))
-        for dfile in files:
-            if dfile['file'] in self.firstbatch:
-                self.firstbatch.remove(dfile['file'])
+        for file_ in files:
+            if file_['file'] in self.firstbatch:
+                self.firstbatch.remove(file_['file'])
                 continue
-            if dfile['filetype'] == 'directory':
-                result_dirs.add(dfile['file'])
+            if file_['filetype'] == 'directory':
+                result_dirs.add(file_['file'])
             else:
-                if check_mimetype and not dfile['mimetype'].startswith('video') or \
-                        self.watchmode == WATCHMODE_UNWATCHED and dfile['playcount'] > 0 or \
-                        self.watchmode == WATCHMODE_WATCHED and dfile['playcount'] == 0:
+                if check_mimetype and not file_['mimetype'].startswith('video') or \
+                        self.watchmode == WATCHMODE_UNWATCHED and file_['playcount'] > 0 or \
+                        self.watchmode == WATCHMODE_WATCHED and file_['playcount'] == 0:
                     continue
-                result_files.append(dfile)
+                result_files.append(file_)
                 if self.singleresult:
                     break
         if self.firstlist and len(files) == self.FIRST_CHUNK_SIZE:
-            self.firstbatch = set(dfile['file'] for dfile in files)
+            self.firstbatch = set(file_['file'] for file_ in files)
             self.unuseddirs.add(fullpath)
         self.firstlist = False
         return result_dirs, result_files
