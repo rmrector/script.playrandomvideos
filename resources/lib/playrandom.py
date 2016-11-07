@@ -1,4 +1,3 @@
-import xbmcaddon
 import xbmcgui
 
 import quickjson
@@ -47,7 +46,7 @@ def play(pathinfo):
         showbusy = get_main_addon().getSetting('hidebusydialog') == 'false'
         get_player(get_generator(content, info, singlevideo), showbusy).run()
     except quickjson.JSONException as ex:
-        # json_result['error']['code'] == -32602 seems to be the generic code for "cannot access file"
+        # json_result['error']['code'] == -32602 is the best we get, invalid params
         if content == 'other' and ex.json_result.get('error', {}).get('code', 0) == -32602 \
                 and not any(1 for source in quickjson.get_sources('video') if info['path'].startswith(source['file'])):
             xbmcgui.Dialog().ok(L(ADD_SOURCE_HEADER), L(ADD_SOURCE_MESSAGE).format(info['path']))
@@ -62,15 +61,18 @@ def _parse_path(pathinfo):
     if pathinfo['type'] == 'videodb':
         path_len = len(pathinfo['path'])
         firstpath = pathinfo['path'][0] if path_len else None
-        if path_len > 1:
+        content = firstpath
+        if not path_len:
+            skip_path = True
+        elif path_len > 1:
             category = pathinfo['path'][1]
             if firstpath in ('tvshows', 'inprogresstvshows'):
                 content = 'tvshows'
+                seriesfilter = None
                 if category == 'titles' and path_len <= 2:
                     # 'xsp' 'rules' are passed from library nodes
                     if _has_xsprules(pathinfo):
-                        filters.append({'field': 'tvshow', 'operator': 'is', 'value': [series['label'] for
-                            series in quickjson.get_tvshows(pathinfo['query']['xsp']['rules'])]})
+                        seriesfilter = pathinfo['query']['xsp']['rules']
                 elif category == 'titles' or path_len > 3 or firstpath == 'inprogresstvshows':
                     # points to specific show, disregard any series filter
                     index_of_tvshowid = 1 if firstpath == 'inprogresstvshows' else \
@@ -84,31 +86,33 @@ def _parse_path(pathinfo):
                             result['season'] = season
                 elif path_len > 2:
                     # contains series filter criteria
-                    value = pathinfo.get('label', pathinfo['path'][2])
-                    seriesfilter = _filter_from_path(category, value)
+                    seriesfilter = _filter_from_path(category, pathinfo)
+
+                if seriesfilter:
                     filters.append({'field': 'tvshow', 'operator': 'is', 'value':
                         [series['label'] for series in quickjson.get_tvshows(seriesfilter)]})
             elif firstpath in ('movies', 'musicvideos'):
-                content = firstpath
-                if category == 'titles' and path_len <= 2:
+                if category == 'titles':
                     if _has_xsprules(pathinfo):
                         filters.append(pathinfo['query']['xsp']['rules'])
-                if category != 'titles' and path_len > 2:
-                    value = pathinfo.get('label', pathinfo['path'][2])
-                    filters.append(_filter_from_path(category, value))
+                elif path_len > 2:
+                    filters.append(_filter_from_path(category, pathinfo))
         elif firstpath == 'inprogresstvshows': # added in Krypton
             content = 'tvshows'
             filters.append({'field': 'tvshow', 'operator': 'is', 'value': [series['label'] for series
                 in quickjson.get_tvshows({'field': 'inprogress', 'operator':'true', 'value':''})]})
     elif pathinfo['type'] == 'library':
+        path_len = len(pathinfo['path'])
         # TODO: read these from the actual XML files? This falls apart when Kodi changes them
         #  or even when the viewer changes nodes!
-        if 'inprogressshows.xml' in pathinfo['path']:
+        if path_len < 2:
+            skip_path = True
+        elif 'inprogressshows.xml' in pathinfo['path']:
             content = 'tvshows'
             filters.append({'field': 'tvshow', 'operator': 'is', 'value': [series['label'] for series
                 in quickjson.get_tvshows({'field': 'inprogress', 'operator':'true', 'value':''})]})
-        elif len(pathinfo['path']) > 2 and pathinfo['path'][2] in ('recentlyaddedmovies.xml',
-                'recentlyaddedepisodes.xml', 'recentlyaddedmusicvideos.xml'):
+        elif any(1 for p in ('recentlyaddedmovies.xml', 'recentlyaddedepisodes.xml',
+                'recentlyaddedmusicvideos.xml') if p in pathinfo['path']):
             content = 'other'
             result['path'] = pathinfo['full path']
         elif pathinfo['path'][1] == 'tvshows':
@@ -120,7 +124,8 @@ def _parse_path(pathinfo):
         elif pathinfo['path'][1] in ('files.xml', 'playlists.xml', 'addons.xml'):
             skip_path = True
     elif pathinfo['type'] == 'special':
-        if pathinfo['path'][0] == 'videoplaylists':
+        # TODO: Playlists could also be usefully parsed
+        if not pathinfo['path'] or pathinfo['path'][0] == 'videoplaylists':
             skip_path = True
 
     if skip_path:
@@ -135,6 +140,7 @@ def _parse_path(pathinfo):
     result['watchmode'] = watchmode
     if watchmode == WATCHMODE_NONE:
         return None, None
+
     if watchmode == WATCHMODE_UNWATCHED:
         filters.append(unplayed_filter)
     elif watchmode == WATCHMODE_WATCHED:
@@ -144,7 +150,8 @@ def _parse_path(pathinfo):
         result['filters'] = filters
     return (content, result)
 
-def _filter_from_path(category, value):
+def _filter_from_path(category, pathinfo):
+    value = pathinfo.get('label', pathinfo['path'][2] if len(pathinfo['path']) > 2 else '?')
     return {'field': pathcategory_lookup.get(category, category), 'operator': 'is', 'value': value}
 
 def _has_xsprules(pathinfo):
@@ -164,20 +171,14 @@ def _get_watchmode(pathwatchmode, content):
             watchmode = WATCHMODE_ASKME
 
     if not watchmode:
-        settingenum = None
-        addon = xbmcaddon.Addon()
-        if content == 'movies':
-            settingenum = addon.getSetting('watchmodemovies')
-        elif content == 'tvshows':
-            settingenum = addon.getSetting('watchmodetvshows')
-        elif content == 'musicvideos':
-            settingenum = addon.getSetting('watchmodemusicvideos')
-        elif content == 'other':
-            settingenum = addon.getSetting('watchmodeother')
+        addonsetting = ('watchmodemovies' if content == 'movies' else
+            'watchmodetvshows' if content == 'tvshows' else
+            'watchmodemusicvideos' if content == 'musicvideos' else
+            'watchmodeother' if content == 'other' else None)
 
-        if settingenum:
+        if addonsetting:
             try:
-                watchmode = WATCHMODES[int(settingenum)]
+                watchmode = WATCHMODES[int(get_main_addon().getSetting(addonsetting))]
             except ValueError:
                 pass
 
