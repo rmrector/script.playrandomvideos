@@ -2,14 +2,15 @@ import xbmc
 
 from listitembuilder import build_video_listitem
 import quickjson
-from pykodi import log
+from pykodi import get_busydialog, log
 
 LOAD_NEW = 3
 KEEP_PREVIOUS = 4
 
-def get_player(source):
+def get_player(source, showbusydialog):
     result = RollingPlaylistPlayer()
     result.source = source
+    result.showbusydialog = showbusydialog
     return result
 
 class RollingPlaylistPlayer(xbmc.Player):
@@ -19,6 +20,7 @@ class RollingPlaylistPlayer(xbmc.Player):
         self.playlist.clear()
         self._source = None
         self.source_exhausted = True
+        self.showbusydialog = None
 
     @property
     def source(self):
@@ -31,7 +33,12 @@ class RollingPlaylistPlayer(xbmc.Player):
             self.source_exhausted = False
 
     def run(self):
-        if self.extend_playlist():
+        if self.showbusydialog:
+            busy = get_busydialog()
+            busy.create()
+        extended = self.extend_playlist()
+        if self.showbusydialog: busy.close()
+        if extended:
             self.play(self.playlist)
             if LOAD_NEW - 1 > 0:
                 self.extend_playlist(LOAD_NEW - 1)

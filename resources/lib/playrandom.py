@@ -2,7 +2,7 @@ import xbmcaddon
 import xbmcgui
 
 import quickjson
-from pykodi import localize as L
+from pykodi import get_main_addon, localize as L
 from player import get_player
 from generators import get_generator
 
@@ -44,7 +44,8 @@ def play(pathinfo):
         return
     singlevideo = pathinfo.get('singlevideo', False)
     try:
-        get_player(get_generator(content, info, singlevideo)).run()
+        showbusy = get_main_addon().getSetting('hidebusydialog') == 'false'
+        get_player(get_generator(content, info, singlevideo), showbusy).run()
     except quickjson.JSONException as ex:
         # json_result['error']['code'] == -32602 seems to be the generic code for "cannot access file"
         if content == 'other' and ex.json_result.get('error', {}).get('code', 0) == -32602 \

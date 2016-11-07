@@ -3,6 +3,7 @@ import sys
 import urlparse
 import xbmc
 import xbmcaddon
+import xbmcgui
 from datetime import datetime
 
 if sys.version_info < (2, 7):
@@ -87,6 +88,12 @@ def log(message, level=xbmc.LOGDEBUG):
     file_message = '[%s] %s' % (get_main_addon().getAddonInfo('id'), message)
     xbmc.log(file_message, level)
 
+def get_busydialog():
+    try:
+        return xbmcgui.DialogBusy()
+    except AttributeError: # pre-Krypton beta6-ish
+        return OldDialogBusy()
+
 class LogJSONEncoder(json.JSONEncoder):
     def __init__(self, *args, **kwargs):
         kwargs['skipkeys'] = True
@@ -125,3 +132,26 @@ class UTF8JSONDecoder(json.JSONDecoder):
             return jsoninput.encode('utf-8')
         else:
             return jsoninput
+
+class OldDialogBusy(object):
+    # DEPRECATED: Just a quick shim to match Krypton's new DialogBusy() API
+    def __init__(self):
+        self.visible = False
+
+    def create(self):
+        xbmc.executebuiltin('ActivateWindow(busydialog)')
+        self.visible = True
+
+    def close(self):
+        xbmc.executebuiltin('Dialog.Close(busydialog)')
+        self.visible = False
+
+    def update(self): pass
+    def iscanceled(self): return False
+
+    def __del__(self):
+        if self.visible:
+            try:
+                xbmc.executebuiltin('Dialog.Close(busydialog)')
+            except AttributeError:
+                pass

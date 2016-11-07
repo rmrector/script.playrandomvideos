@@ -32,6 +32,10 @@ msgid "Add this or a higher directory as a permanent video source and try again.
 msgstr ""
 
 # Settings
+msgctxt "#32905"
+msgid "Hide busy notification before first video"
+msgstr ""
+
 #  heading
 msgctxt "#32900"
 msgid "Watched Filters"
