@@ -3,11 +3,14 @@ A Kodi add-on to quickly play random videos from (nearly) any list. This add-on 
 play random episodes from TV shows, movies from genres/sets/years/tags, and videos
 from playlists, file systems, and just about anything else*.
 
-It adds a context item to most playable lists when navigating videos, and also provides a script
+It adds a [context item] to most playable lists of videos and provides a script
 that can be executed by skins with `RunScript` and JSON-RPC with `Addons.ExecuteAddon`.
 
-## Settings
-There are add-on settings to set a (un)watched filter for different video library sections.
+Install it from the official Kodi repo, under "Context menus".  
+Source available on GitHub at [script.playrandomvideos].
+
+[context item]: http://kodi.wiki/view/Context_menu#Contextual_menu
+[script.playrandomvideos]: https://github.com/rmrector/script.playrandomvideos/
 
 ## Skin usage
 Skins can use it with an action like so: `RunScript(script.playrandomvideos, <list path>,
@@ -25,7 +28,7 @@ makes for a good button in the sidebar or as some other container-focused option
 
     <visible>ListItem.IsFolder + !ListItem.IsParentFolder + !SubString(ListItem.FolderPath, plugin, Left) + !SubString(ListItem.FolderPath, addons, Left) + !SubString(ListItem.FolderPath, sources, Left) + !StringCompare(ListItem.FolderPath, add)</visible>
 
-to hide it for paths that the script ignores.
+to match the context item's visibility on this window.
 
 A label is available with `$ADDON[script.playrandomvideos 32100]`, 'Play Random'.
 
