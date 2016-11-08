@@ -21,9 +21,7 @@ def get_random_episodes(tvshow_id=None, season=None, filters=None, limit=None):
         if season is not None:
             json_request['params']['season'] = season
     json_request['params']['sort'] = {'method': 'random'}
-    json_request['params']['properties'] = ['file', 'title', 'lastplayed',
-        'episode', 'season', 'plot', 'art', 'playcount', 'runtime', 'tvshowid',
-        'uniqueid', 'showtitle']
+    json_request['params']['properties'] = ['file']
     if limit:
         json_request['params']['limits'] = {'end': limit}
 
@@ -39,9 +37,7 @@ def get_random_episodes(tvshow_id=None, season=None, filters=None, limit=None):
 def get_random_movies(filters=None, limit=None):
     json_request = get_base_json_request('VideoLibrary.GetMovies')
     json_request['params']['sort'] = {'method': 'random'}
-    json_request['params']['properties'] = ['file', 'title', 'genre', 'year', 'rating',
-        'playcount', 'runtime', 'lastplayed', 'plot', 'art', 'mpaa', 'imdbnumber',
-        'plotoutline', 'tagline']
+    json_request['params']['properties'] = ['file']
     if limit:
         json_request['params']['limits'] = {'end': limit}
 
@@ -57,7 +53,7 @@ def get_random_movies(filters=None, limit=None):
 def get_random_musicvideos(filters=None, limit=None):
     json_request = get_base_json_request('VideoLibrary.GetMusicVideos')
     json_request['params']['sort'] = {'method': 'random'}
-    json_request['params']['properties'] = ['file', 'art', 'genre', 'lastplayed']
+    json_request['params']['properties'] = ['file']
     if limit:
         json_request['params']['limits'] = {'end': limit}
 
@@ -75,9 +71,7 @@ def get_directory(path, limit=None):
     json_request['params'] = {'directory': path}
     json_request['params']['media'] = 'video'
     json_request['params']['sort'] = {'method': 'random'}
-    json_request['params']['properties'] = ['mimetype', 'playcount', 'lastplayed', 'art',
-        'episode', 'season', 'plot', 'runtime', 'tvshowid', 'uniqueid', 'showtitle', 'genre',
-        'year', 'rating', 'mpaa', 'imdbnumber', 'plotoutline', 'tagline']
+    json_request['params']['properties'] = ['file', 'playcount', 'lastplayed', 'mimetype']
     if limit:
         json_request['params']['limits'] = {'end': limit}
 
