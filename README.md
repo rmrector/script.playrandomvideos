@@ -35,6 +35,19 @@ In **MyVideoNav.xml**, `watchmode=$INFO[Control.GetLabel(10)]` should
 match the behavior of the button that switches between watched/unwatched/all,
 if it is on your window. *singlevideo* needs no value.
 
+## Button/menu actions
+
+It is also possible to create an action that always plays randomly from one specific list, for use
+in a home menu or even as flair on another window, which can be assigned with Skin Shortcuts
+or added directly to skin files.
+
+- Play randomly from a list of all movies: `RunScript(script.playrandomvideos, "videodb://movies/")`
+- all episodes: `RunScript(script.playrandomvideos, "videodb://tvshows/")`
+- all music videos: `RunScript(script.playrandomvideos, "videodb://musicvideos/")`
+- from any of your playlists: `RunScript(script.playrandomvideos, "special://playlists/video/<playlist filename>")`
+- movies from any genre: `RunScript(script.playrandomvideos, "videodb://movies/genres/xx/", "label=Documentary")`
+- episodes from any TV network: `RunScript(script.playrandomvideos, "videodb://tvshows/studios/xx/", "label=Cartoon Network")`
+
 ## * Plugins
 It doesn't work for plugin paths :(. I would like it to, but I can't figure a good
 way to implement it, considering all the things plugins do.
