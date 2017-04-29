@@ -15,6 +15,8 @@
 	<extension point="xbmc.addon.metadata">
 		<summary lang="en">Plays random videos from all sorts of lists.</summary>
 		<description lang="en">This add-on can quickly play random episodes from TV shows, movies from genres/sets/years/tags, and videos from playlists, the filesystem, and just about anything else, other than plugins.</description>
+		<news>v1.1.1 (2017-04-28)
+- Fix incorrect JSON-RPC notifications on Krypton</news>
 		<platform>all</platform>
 		<source>https://github.com/rmrector/script.playrandomvideos</source>
 		<forum>http://forum.kodi.tv/showthread.php?tid=238613</forum>
