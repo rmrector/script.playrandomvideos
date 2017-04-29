@@ -25,7 +25,7 @@ def build_video_listitem(item):
         if key in infokey_map:
             infolabels[infokey_map[key]] = value
         elif key in mediatype_map:
-            infolabels['dbid'] = key
+            infolabels['dbid'] = value
             infolabels['mediatype'] = mediatype_map[key]
 
     result.setInfo('video', infolabels)
