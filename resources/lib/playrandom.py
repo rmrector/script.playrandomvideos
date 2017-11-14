@@ -146,6 +146,8 @@ def _parse_path(pathinfo):
     elif watchmode == WATCHMODE_WATCHED:
         filters.append(played_filter)
 
+    if get_main_addon().getSetting('continuous_play') == 'true':
+        result['continuous_play'] = True
     if filters:
         result['filters'] = filters
     return (content, result)

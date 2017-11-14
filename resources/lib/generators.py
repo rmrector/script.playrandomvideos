@@ -11,22 +11,29 @@ WATCHMODE_UNWATCHED = 'unwatched'
 WATCHMODE_WATCHED = 'watched'
 
 def get_generator(content, info, singleresult):
+    filters = info.get('filters')
+    continuous_play = info.get('continuous_play', False)
+    fallback_watchedstatus = info.get('fallback_watchedstatus', False)
     if content == 'tvshows':
         return RandomFilterableJSONGenerator(lambda filters, limit:
             quickjson.get_random_episodes(info.get('tvshowid'), info.get('season'), filters, limit),
-            info.get('filters'), singleresult)
+            filters, singleresult, continuous_play, fallback_watchedstatus)
     elif content == 'movies':
-        return RandomFilterableJSONGenerator(quickjson.get_random_movies, info.get('filters'), singleresult)
+        return RandomFilterableJSONGenerator(quickjson.get_random_movies, filters, singleresult,
+            continuous_play, fallback_watchedstatus)
     elif content == 'musicvideos':
-        return RandomFilterableJSONGenerator(quickjson.get_random_musicvideos, info.get('filters'), singleresult)
+        return RandomFilterableJSONGenerator(quickjson.get_random_musicvideos, filters, singleresult,
+            continuous_play, fallback_watchedstatus)
     elif content == 'other':
-        return RandomJSONDirectoryGenerator(info['path'], info['watchmode'], singleresult)
+        return RandomJSONDirectoryGenerator(info['path'], info['watchmode'], singleresult,
+            continuous_play, fallback_watchedstatus)
     else:
         log("I don't know what to do with this:", xbmc.LOGWARNING)
         log({'content': content, 'info': info}, xbmc.LOGWARNING)
 
 class RandomFilterableJSONGenerator(object):
-    def __init__(self, source_function, filters=None, singleresult=False):
+    def __init__(self, source_function, filters=None, singleresult=False, continuous_play=False,
+            fallback_watchedstatus=False):
         """
         Args:
             source_function: takes two parameters, a list of `filters` and `limit` count
@@ -35,14 +42,15 @@ class RandomFilterableJSONGenerator(object):
         """
         self.source_function = source_function
 
-        self.filters = [{'field': 'lastplayed', 'operator': 'lessthan', 'value': datetime_now().isoformat(' ')}]
+        self.filters = [] if continuous_play else \
+            [{'field': 'lastplayed', 'operator': 'lessthan', 'value': datetime_now().isoformat(' ')}]
         if filters:
             self.filters.extend(filters)
         self.singleresult = singleresult
         self.singledone = False
 
         self.readylist = deque()
-        self.lastresults = deque(maxlen=20)
+        self.lastresults = deque(maxlen=20 if not continuous_play else 0)
 
     def __iter__(self):
         return self
@@ -68,13 +76,17 @@ class RandomJSONDirectoryGenerator(object):
     FIRST_CHUNK_SIZE = 20
     FIRST_TIMEOUT = 15
 
-    def __init__(self, path, watchmode, singleresult=False):
+    def __init__(self, path, watchmode, singleresult=False, continuous_play=False, fallback_watchedstatus=False):
         self.watchmode = watchmode
         self.singleresult = singleresult
+        self.continuous_play = continuous_play
 
+        self.init()
+
+    def init(self):
         self.tick = 0
         self.firstbatch = set()
-        self.unuseddirs = set((path,))
+        self.unuseddirs = set((self.initialpath,))
         self.unuseditems = []
         self.firstlist = True
 
@@ -92,6 +104,12 @@ class RandomJSONDirectoryGenerator(object):
             result = self._get_item_from_nextpath()
         if not result: # still
             raise StopIteration()
+        if not result:
+            if self.continuous_play:
+                self.init()
+                result = self._get_item_from_nextpath()
+            else:
+                raise StopIteration()
 
         self.tick = 1 if self.tick != 1 else 2
         return result
