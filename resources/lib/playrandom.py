@@ -21,18 +21,6 @@ WATCHMODE_ASKME = 'ask me'
 WATCHMODES = (WATCHMODE_ALLVIDEOS, WATCHMODE_UNWATCHED, WATCHMODE_WATCHED, WATCHMODE_ASKME)
 WATCHMODE_NONE = 'none'
 
-pathcategory_lookup = {
-    'genres': 'genre',
-    'years': 'year',
-    'actors': 'actor',
-    'studios': 'studio',
-    'tags': 'tag',
-    'directors': 'director',
-    'sets': 'set',
-    'countries': 'country',
-    'artists': 'artist',
-    'albums': 'album'}
-
 unplayed_filter = {'field': 'playcount', 'operator': 'is', 'value': '0'}
 played_filter = {'field': 'playcount', 'operator': 'greaterthan', 'value': '0'}
 noextras_filter = {'field': 'season', 'operator': 'isnot', 'value': '0'}
@@ -43,8 +31,8 @@ def play(pathinfo):
         xbmcgui.Dialog().notification(L(34201), pathinfo['full path'])
         return
     singlevideo = pathinfo.get('singlevideo', False)
+    showbusy = get_main_addon().getSetting('hidebusydialog') == 'false'
     try:
-        showbusy = get_main_addon().getSetting('hidebusydialog') == 'false'
         get_player(get_generator(content, info, singlevideo), showbusy).run()
     except quickjson.JSONException as ex:
         # json_result['error']['code'] == -32602 is the best we get, invalid params
@@ -158,9 +146,16 @@ def _parse_path(pathinfo):
         result['filters'] = filters
     return (content, result)
 
+def _get_pathcategory(category):
+    if category == 'countries':
+        return 'country'
+    if category in ('genres', 'years', 'actors', 'studios', 'tags', 'directors', 'sets', 'artists', 'albums'):
+        return category[:-1]
+    return category
+
 def _filter_from_path(category, pathinfo):
     value = pathinfo.get('label', pathinfo['path'][2] if len(pathinfo['path']) > 2 else '?')
-    return {'field': pathcategory_lookup.get(category, category), 'operator': 'is', 'value': value}
+    return {'field': _get_pathcategory(category), 'operator': 'is', 'value': value}
 
 def _has_xsprules(pathinfo):
     return 'query' in pathinfo and 'xsp' in pathinfo['query'] and 'rules' in pathinfo['query']['xsp']
