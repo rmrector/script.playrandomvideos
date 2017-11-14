@@ -69,6 +69,10 @@ msgctxt "#32904"
 msgid "Filter other videos by:"
 msgstr ""
 
+msgctxt "#32906"
+msgid "Exclude TV show extras from random selection"
+msgstr ""
+
 msgctxt "#32907"
 msgid "Play continuously until stopped, randomly repeating videos"
 msgstr ""

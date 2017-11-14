@@ -35,6 +35,7 @@ pathcategory_lookup = {
 
 unplayed_filter = {'field': 'playcount', 'operator': 'is', 'value': '0'}
 played_filter = {'field': 'playcount', 'operator': 'greaterthan', 'value': '0'}
+noextras_filter = {'field': 'season', 'operator': 'isnot', 'value': '0'}
 
 def play(pathinfo):
     content, info = _parse_path(pathinfo)
@@ -146,6 +147,8 @@ def _parse_path(pathinfo):
     elif watchmode == WATCHMODE_WATCHED:
         filters.append(played_filter)
 
+    if content == 'tvshows' and get_main_addon().getSetting('exclude_extras') == 'true':
+        filters.append(noextras_filter)
     if get_main_addon().getSetting('continuous_play') == 'true':
         result['continuous_play'] = True
     if get_main_addon().getSetting('fallback_watchedstatus') == 'true':
