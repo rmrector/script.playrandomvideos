@@ -12,5 +12,6 @@
 		<setting label="32903" type="enum" id="watchmodemusicvideos" default="0" lvalues="16100|16101|16102|36521" />
 		<setting label="32904" type="enum" id="watchmodeother" default="0" lvalues="16100|16101|16102|36521" />
 		<setting id="continuous_play" label="32907" type="bool" default="false" />
+		<setting id="fallback_watchedstatus" label="32908" type="bool" default="false" />
 	</category>
 </settings>

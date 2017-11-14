@@ -72,3 +72,7 @@ msgstr ""
 msgctxt "#32907"
 msgid "Play continuously until stopped, randomly repeating videos"
 msgstr ""
+
+msgctxt "#32908"
+msgid "If no (un)watched videos, play from all"
+msgstr ""

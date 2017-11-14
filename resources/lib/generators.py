@@ -41,6 +41,7 @@ class RandomFilterableJSONGenerator(object):
             filters: a list of additional filters to be passed to the source_function
         """
         self.source_function = source_function
+        self.fallback_watchedstatus = fallback_watchedstatus
 
         self.filters = [] if continuous_play else \
             [{'field': 'lastplayed', 'operator': 'lessthan', 'value': datetime_now().isoformat(' ')}]
@@ -62,15 +63,27 @@ class RandomFilterableJSONGenerator(object):
             else:
                 self.singledone = True
         if not self.readylist:
-            filters = list(self.filters)
-            if len(self.lastresults):
-                filters.append({'field': 'filename', 'operator': 'isnot', 'value': [ep for ep in self.lastresults]})
-            self.readylist.extend(self.source_function(filters, 1 if self.singleresult else 20))
-            if not self.readylist:
-                raise StopIteration()
+            self._extend()
+        if not self.readylist and self.fallback_watchedstatus and _has_playcount(self.filters):
+            self.filters = _remove_playcount(self.filters)
+            self._extend()
+        if not self.readylist:
+            raise StopIteration()
         result = self.readylist.popleft()
         self.lastresults.append(basename(result['file']))
         return result
+
+    def _extend(self):
+        filters = list(self.filters)
+        if self.lastresults:
+            filters.append({'field': 'filename', 'operator': 'isnot', 'value': [ep for ep in self.lastresults]})
+        self.readylist.extend(self.source_function(filters, 1 if self.singleresult else 20))
+
+def _has_playcount(filters):
+    return any(1 for f in filters if f.get('field') == 'playcount')
+
+def _remove_playcount(filters):
+    return [f for f in filters if f.get('field') != 'playcount']
 
 class RandomJSONDirectoryGenerator(object):
     FIRST_CHUNK_SIZE = 20
@@ -80,6 +93,8 @@ class RandomJSONDirectoryGenerator(object):
         self.watchmode = watchmode
         self.singleresult = singleresult
         self.continuous_play = continuous_play
+        self.fallback_watchedstatus = fallback_watchedstatus
+        self.initialpath = path
 
         self.init()
 
@@ -102,8 +117,10 @@ class RandomJSONDirectoryGenerator(object):
             result = self._pop_randomitem()
         if not result:
             result = self._get_item_from_nextpath()
-        if not result: # still
-            raise StopIteration()
+        if not result and self.watchmode in (WATCHMODE_WATCHED, WATCHMODE_UNWATCHED) and self.fallback_watchedstatus:
+            self.watchmode = None
+            self.init()
+            result = self._get_item_from_nextpath()
         if not result:
             if self.continuous_play:
                 self.init()

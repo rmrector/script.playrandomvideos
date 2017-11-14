@@ -148,6 +148,9 @@ def _parse_path(pathinfo):
 
     if get_main_addon().getSetting('continuous_play') == 'true':
         result['continuous_play'] = True
+    if get_main_addon().getSetting('fallback_watchedstatus') == 'true':
+        result['fallback_watchedstatus'] = True
+
     if filters:
         result['filters'] = filters
     return (content, result)
