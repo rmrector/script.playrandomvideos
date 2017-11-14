@@ -5,16 +5,28 @@ msgid ""
 msgstr ""
 
 # Commands
+msgctxt "#32099"
+msgid "Play one random"
+msgstr ""
+
 msgctxt "#32100"
-msgid "Play Random"
+msgid "Play random"
 msgstr ""
 
 msgctxt "#32101"
-msgid "Disable 'Play Random' context item [I](per skin)[/I]"
+msgid "Disable 'Play random' context item [I](per skin)[/I]"
 msgstr ""
 
 msgctxt "#32102"
-msgid "Enable 'Play Random' context item [I](per skin)[/I]"
+msgid "Enable 'Play random' context item [I](per skin)[/I]"
+msgstr ""
+
+msgctxt "#32103"
+msgid "Disable 'Play one random' context item [I](per skin)[/I]"
+msgstr ""
+
+msgctxt "#32104"
+msgid "Enable 'Play one random' context item [I](per skin)[/I]"
 msgstr ""
 
 # Headings

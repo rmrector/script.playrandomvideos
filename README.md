@@ -6,7 +6,7 @@ from playlists, file systems, and just about anything else*.
 It adds a [context item] to most playable lists of videos and provides a script
 that can be executed by skins with `RunScript` and JSON-RPC with `Addons.ExecuteAddon`.
 
-Install it from the official Kodi repo, under "Context menus".  
+Install it from the official Kodi repo, under "Context menus", for Kodi 16 Jarvis and newer.  
 Source available on GitHub at [script.playrandomvideos].
 
 [context item]: http://kodi.wiki/view/Context_menu#Contextual_menu
