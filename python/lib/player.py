@@ -1,8 +1,8 @@
 import xbmc
 
-from listitembuilder import build_video_listitem
-import quickjson
-from pykodi import get_busydialog, log
+from .listitembuilder import build_video_listitem
+from . import quickjson
+from .pykodi import get_busydialog, log
 
 LOAD_NEW = 3
 KEEP_PREVIOUS = 4

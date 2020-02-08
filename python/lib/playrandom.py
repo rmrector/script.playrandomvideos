@@ -1,9 +1,9 @@
 import xbmcgui
 
-import quickjson
-from pykodi import get_main_addon, localize as L
-from player import get_player
-from generators import get_generator
+from . import quickjson
+from .pykodi import get_main_addon, localize as L
+from .player import get_player
+from .generators import get_generator
 
 SELECTWATCHMODE_HEADING = 32010
 WATCHMODE_ALLVIDEOS_TEXT = 16100

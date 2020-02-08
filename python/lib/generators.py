@@ -4,8 +4,8 @@ from collections import deque
 from random import choice
 from time import time
 
-import quickjson
-from pykodi import log, datetime_now
+from . import quickjson
+from .pykodi import log, datetime_now
 
 WATCHMODE_UNWATCHED = 'unwatched'
 WATCHMODE_WATCHED = 'watched'
@@ -56,7 +56,7 @@ class RandomFilterableJSONGenerator(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         if self.singleresult:
             if self.singledone:
                 raise StopIteration()
@@ -108,7 +108,7 @@ class RandomJSONDirectoryGenerator(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         if self.singleresult and self.tick:
             raise StopIteration()
 

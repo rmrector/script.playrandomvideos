@@ -1,7 +1,7 @@
 import xbmc
 
-import pykodi
-from pykodi import json, log
+from . import pykodi
+from .pykodi import json, log
 
 def get_tvshows(seriesfilter=None):
     json_request = get_base_json_request('VideoLibrary.GetTVShows')

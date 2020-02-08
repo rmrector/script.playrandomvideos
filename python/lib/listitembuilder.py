@@ -19,7 +19,7 @@ def build_video_listitem(item):
         result.setLabel2(item['label2'])
 
     infolabels = {}
-    for key, value in item.iteritems():
+    for key, value in item.items():
         if isinstance(value, collections.Mapping):
             continue
         if key in infokey_map:
@@ -37,7 +37,7 @@ def build_video_listitem(item):
         result.setArt(item['art'])
 
     if 'streamdetails' in item:
-        for streamtype, streams in item['streamdetails'].iteritems():
+        for streamtype, streams in item['streamdetails'].items():
             for stream in streams:
                 result.addStreamInfo(streamtype, stream)
     return result
