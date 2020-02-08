@@ -1,15 +1,8 @@
-import os
 import sys
 import xbmc
-import xbmcaddon
 
-addon = xbmcaddon.Addon()
-resourcelibs = xbmc.translatePath(addon.getAddonInfo('path')).decode('utf-8')
-resourcelibs = os.path.join(resourcelibs, u'resources', u'lib')
-sys.path.append(resourcelibs)
-
-import playrandom
-from pykodi import log, get_pathinfo
+from lib import playrandom
+from lib.pykodi import log, get_pathinfo
 
 def main():
     if len(sys.argv) < 2:

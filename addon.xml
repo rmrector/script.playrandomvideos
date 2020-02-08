@@ -6,17 +6,17 @@
 	</requires>
 	<extension point="kodi.context.item">
 		<menu id="kodi.core.main">
-			<item library="context.py">
+			<item library="python/context.py">
 				<label>32100</label>
 				<visible>!Skin.HasSetting(disablecontext:script.playrandomvideos) + [Window.IsVisible(videos) | StringCompare(ListItem.DBTYPE, set) | StringCompare(ListItem.DBTYPE, tvshow) | StringCompare(ListItem.DBTYPE, season) | String.IsEqual(ListItem.DBTYPE, set) | String.IsEqual(ListItem.DBTYPE, tvshow) | String.IsEqual(ListItem.DBTYPE, season)] + ListItem.IsFolder + !ListItem.IsParentFolder + ![SubString(ListItem.FolderPath, plugin, Left) | SubString(ListItem.FolderPath, addons, Left) | SubString(ListItem.FolderPath, sources, Left) | String.StartsWith(ListItem.FolderPath, plugin) | String.StartsWith(ListItem.FolderPath, addons) | String.StartsWith(ListItem.FolderPath, sources)] + ![StringCompare(ListItem.FolderPath, add) | String.IsEqual(ListItem.FolderPath, add)]</visible>
 			</item>
-			<item library="context_single.py">
+			<item library="python/context_single.py">
 				<label>32099</label>
 				<visible>Skin.HasSetting(enablecontext:script.playrandomvideos.single) + [Window.IsVisible(videos) | StringCompare(ListItem.DBTYPE, set) | StringCompare(ListItem.DBTYPE, tvshow) | StringCompare(ListItem.DBTYPE, season) | String.IsEqual(ListItem.DBTYPE, set) | String.IsEqual(ListItem.DBTYPE, tvshow) | String.IsEqual(ListItem.DBTYPE, season)] + ListItem.IsFolder + !ListItem.IsParentFolder + ![SubString(ListItem.FolderPath, plugin, Left) | SubString(ListItem.FolderPath, addons, Left) | SubString(ListItem.FolderPath, sources, Left) | String.StartsWith(ListItem.FolderPath, plugin) | String.StartsWith(ListItem.FolderPath, addons) | String.StartsWith(ListItem.FolderPath, sources)] + ![StringCompare(ListItem.FolderPath, add) | String.IsEqual(ListItem.FolderPath, add)]</visible>
 			</item>
 		</menu>
 	</extension>
-	<extension point="xbmc.python.library" library="script.py" />
+	<extension point="xbmc.python.library" library="python/script.py" />
 	<extension point="xbmc.addon.metadata">
 		<summary lang="en">Plays random videos from all sorts of lists.</summary>
 		<description lang="en">This add-on can quickly play random episodes from TV shows, movies from genres/sets/years/tags, and videos from playlists, the filesystem, and just about anything else, other than plugins.</description>

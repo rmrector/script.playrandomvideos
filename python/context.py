@@ -1,14 +1,8 @@
-import os
 import sys
 import xbmc
-import xbmcaddon
 
-addon = xbmcaddon.Addon()
-addonpath = xbmc.translatePath(addon.getAddonInfo('path')).decode('utf-8')
-sys.path.append(os.path.join(addonpath, u'resources', u'lib'))
-
-import playrandom
-from pykodi import get_pathinfo
+from lib import playrandom
+from lib.pykodi import get_pathinfo
 
 # DEPRECATED: StringCompare and SubString in addon.xml is deprecated in Krypton, gone in Leia,
 #  but both options resolve to False when unrecognized so the result is the same for all versions
