@@ -1,18 +1,135 @@
-<?xml version="1.0" encoding="utf-8"?>
-<settings>
-	<category label="32900">
-		<setting id="hidebusydialog" label="32905" type="bool" default="false" />
-		<setting label="32101" type="action" action="Skin.ToggleSetting(disablecontext:script.playrandomvideos)" visible="!Skin.HasSetting(disablecontext:script.playrandomvideos)" />
-		<setting label="32102" type="action" action="Skin.ToggleSetting(disablecontext:script.playrandomvideos)" visible="Skin.HasSetting(disablecontext:script.playrandomvideos)" />
-		<setting label="32103" type="action" action="Skin.ToggleSetting(enablecontext:script.playrandomvideos.single)" visible="Skin.HasSetting(enablecontext:script.playrandomvideos.single)" />
-		<setting label="32104" type="action" action="Skin.ToggleSetting(enablecontext:script.playrandomvideos.single)" visible="!Skin.HasSetting(enablecontext:script.playrandomvideos.single)" />
-		<setting type="lsep" label="32010" />
-		<setting label="32901" type="enum" id="watchmodemovies" default="0" lvalues="16100|16101|16102|36521" />
-		<setting label="32902" type="enum" id="watchmodetvshows" default="0" lvalues="16100|16101|16102|36521" />
-		<setting label="32903" type="enum" id="watchmodemusicvideos" default="0" lvalues="16100|16101|16102|36521" />
-		<setting label="32904" type="enum" id="watchmodeother" default="0" lvalues="16100|16101|16102|36521" />
-		<setting id="exclude_extras" label="32906" type="bool" default="false" />
-		<setting id="continuous_play" label="32907" type="bool" default="false" />
-		<setting id="fallback_watchedstatus" label="32908" type="bool" default="false" />
-	</category>
+<?xml version="1.0" ?>
+<settings version="1">
+	<section id="script.playrandomvideos">
+		<category id="watched filters" label="32900" help="">
+			<group id="1">
+				<setting id="hidebusydialog" type="boolean" label="32905" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="togglecontextoff" type="action" label="32101" help="">
+					<level>0</level>
+					<data>Skin.ToggleSetting(disablecontext:script.playrandomvideos)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<dependencies>
+						<dependency type="visible">
+							<condition on="property" name="InfoBool">!Skin.HasSetting(disablecontext:script.playrandomvideos)</condition>
+						</dependency>
+					</dependencies>
+					<control type="button" format="action"/>
+				</setting>
+				<setting id="togglecontexton" type="action" label="32102" help="">
+					<level>0</level>
+					<data>Skin.ToggleSetting(disablecontext:script.playrandomvideos)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<dependencies>
+						<dependency type="visible">
+							<condition on="property" name="InfoBool">Skin.HasSetting(disablecontext:script.playrandomvideos)</condition>
+						</dependency>
+					</dependencies>
+					<control type="button" format="action"/>
+				</setting>
+				<setting id="togglesinglecontextoff" type="action" label="32103" help="">
+					<level>0</level>
+					<data>Skin.ToggleSetting(enablecontext:script.playrandomvideos.single)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<dependencies>
+						<dependency type="visible">
+							<condition on="property" name="InfoBool">Skin.HasSetting(enablecontext:script.playrandomvideos.single)</condition>
+						</dependency>
+					</dependencies>
+					<control type="button" format="action"/>
+				</setting>
+				<setting id="togglesinglecontexton" type="action" label="32104" help="">
+					<level>0</level>
+					<data>Skin.ToggleSetting(enablecontext:script.playrandomvideos.single)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<dependencies>
+						<dependency type="visible">
+							<condition on="property" name="InfoBool">!Skin.HasSetting(enablecontext:script.playrandomvideos.single)</condition>
+						</dependency>
+					</dependencies>
+					<control type="button" format="action"/>
+				</setting>
+			</group>
+			<group id="2" label="32010">
+				<setting id="watchmodemovies" type="integer" label="32901" help="">
+					<level>0</level>
+					<default>0</default>
+					<constraints>
+						<options>
+							<option label="16100">0</option>
+							<option label="16101">1</option>
+							<option label="16102">2</option>
+							<option label="36521">3</option>
+						</options>
+					</constraints>
+					<control type="spinner" format="string"/>
+				</setting>
+				<setting id="watchmodetvshows" type="integer" label="32902" help="">
+					<level>0</level>
+					<default>0</default>
+					<constraints>
+						<options>
+							<option label="16100">0</option>
+							<option label="16101">1</option>
+							<option label="16102">2</option>
+							<option label="36521">3</option>
+						</options>
+					</constraints>
+					<control type="spinner" format="string"/>
+				</setting>
+				<setting id="watchmodemusicvideos" type="integer" label="32903" help="">
+					<level>0</level>
+					<default>0</default>
+					<constraints>
+						<options>
+							<option label="16100">0</option>
+							<option label="16101">1</option>
+							<option label="16102">2</option>
+							<option label="36521">3</option>
+						</options>
+					</constraints>
+					<control type="spinner" format="string"/>
+				</setting>
+				<setting id="watchmodeother" type="integer" label="32904" help="">
+					<level>0</level>
+					<default>0</default>
+					<constraints>
+						<options>
+							<option label="16100">0</option>
+							<option label="16101">1</option>
+							<option label="16102">2</option>
+							<option label="36521">3</option>
+						</options>
+					</constraints>
+					<control type="spinner" format="string"/>
+				</setting>
+				<setting id="exclude_extras" type="boolean" label="32906" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="continuous_play" type="boolean" label="32907" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="fallback_watchedstatus" type="boolean" label="32908" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+			</group>
+		</category>
+	</section>
 </settings>
