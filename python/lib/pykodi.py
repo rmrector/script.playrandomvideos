@@ -22,17 +22,6 @@ def get_main_addon():
         _main_addon = xbmcaddon.Addon()
     return _main_addon
 
-_kodiversion = None
-def get_kodi_version():
-    global _kodiversion
-    if _kodiversion is None:
-        json_request = {'jsonrpc': '2.0', 'method': 'Application.GetProperties', 'params': {}, 'id': 1}
-        json_request['params']['properties'] = ['version']
-        json_result = execute_jsonrpc(json_request)
-        if 'result' in json_result:
-            _kodiversion = json_result['result']['version']['major']
-    return _kodiversion
-
 def localize(messageid):
     if isinstance(messageid, str):
         return messageid
@@ -116,7 +105,7 @@ class LogJSONEncoder(json.JSONEncoder):
 class DialogBusy(object):
     def __init__(self):
         self.visible = False
-        window = 'busydialognocancel' if get_kodi_version() >= 18 else 'busydialog'
+        window = 'busydialognocancel'
         self._activate = 'ActivateWindow({0})'.format(window)
         self._close = 'Dialog.Close({0})'.format(window)
 
