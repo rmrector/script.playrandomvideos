@@ -17,8 +17,8 @@
 	</extension>
 	<extension point="xbmc.python.library" library="python/script.py" />
 	<extension point="xbmc.addon.metadata">
-		<summary lang="en">Plays random videos from all sorts of lists.</summary>
-		<description lang="en">This add-on can quickly play random episodes from TV shows, movies from genres/sets/years/tags, and videos from playlists, the filesystem, and just about anything else, other than plugins.</description>
+		<summary lang="en_gb">Plays random videos from all sorts of lists.</summary>
+		<description lang="en_gb">This add-on can quickly play random episodes from TV shows, movies from genres/sets/years/tags, and videos from playlists, the filesystem, and just about anything else, other than plugins.</description>
 		<news>v2.0.0 (??)
 - Kodi 19 Matrix / Python 3 compatibility. Breaks compatibility with previous versions of Kodi.</news>
 		<platform>all</platform>
