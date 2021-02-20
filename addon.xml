@@ -24,7 +24,7 @@
 		<platform>all</platform>
 		<source>https://github.com/rmrector/script.playrandomvideos</source>
 		<forum>https://forum.kodi.tv/showthread.php?tid=238613</forum>
-		<license>The MIT License</license>
+		<license>MIT</license>
 		<assets>
 			<icon>icon.png</icon>
 		</assets>

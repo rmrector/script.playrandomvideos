@@ -47,7 +47,7 @@ class RollingPlaylistPlayer(xbmc.Player):
                 break
             xbmc.sleep(2000)
 
-        log("I'm done", xbmc.LOGINFO)
+        log("I'm done")
 
     def add_to_playlist(self, item):
         self.playlist.add(item.get('file'), build_video_listitem(item))
@@ -62,7 +62,7 @@ class RollingPlaylistPlayer(xbmc.Player):
                 addedcount += 1
             except StopIteration:
                 self.source_exhausted = True
-                log("Source has been exhausted", xbmc.LOGINFO)
+                log("Source has been exhausted")
                 break
 
         return True if addedcount else False
