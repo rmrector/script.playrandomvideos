@@ -28,9 +28,5 @@
 		<assets>
 			<icon>icon.png</icon>
 		</assets>
-		<disclaimer />
-		<language />
-		<website />
-		<email />
 	</extension>
 </addon>
