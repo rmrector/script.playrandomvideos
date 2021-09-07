@@ -1,8 +1,12 @@
 import collections
 import xbmcgui
 
-# JSON keys that don't match info labels
+
 infokey_map = {
+    'season': 'season',
+    'episode': 'episode',
+    'playcount': 'playcount',
+    # JSON keys that don't match info labels
     'track': 'tracknumber',
     'runtime': 'duration',
     'showtitle': 'tvshowtitle',
@@ -29,9 +33,6 @@ def build_video_listitem(item):
         elif key in mediatype_map:
             infolabels['dbid'] = value
             infolabels['mediatype'] = mediatype_map[key]
-
-    if 'season' in item and 'episode' in item:
-        infolabels['season'], infolabels['episode'] = item['season'], item['episode']
 
     result.setInfo('video', infolabels)
 
