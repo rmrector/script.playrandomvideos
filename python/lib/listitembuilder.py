@@ -6,6 +6,8 @@ infokey_map = {
     'season': 'season',
     'episode': 'episode',
     'playcount': 'playcount',
+    'rating': 'rating',
+    'userrating': 'userrating',
     # JSON keys that don't match info labels
     'track': 'tracknumber',
     'runtime': 'duration',
