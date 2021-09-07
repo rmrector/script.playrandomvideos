@@ -15,6 +15,8 @@ mediatype_map = {'episodeid': 'episode',
 
 def build_video_listitem(item):
     result = xbmcgui.ListItem(item.get('label'))
+    if 'title' in item:
+        result.setLabel(item['title'])
     if 'label2' in item:
         result.setLabel2(item['label2'])
 
@@ -27,6 +29,9 @@ def build_video_listitem(item):
         elif key in mediatype_map:
             infolabels['dbid'] = value
             infolabels['mediatype'] = mediatype_map[key]
+
+    if 'season' in item and 'episode' in item:
+        infolabels['season'], infolabels['episode'] = item['season'], item['episode']
 
     result.setInfo('video', infolabels)
 
