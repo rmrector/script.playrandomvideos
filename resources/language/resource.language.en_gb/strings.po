@@ -10,7 +10,7 @@ msgid "Play one random"
 msgstr ""
 
 msgctxt "#32100"
-msgid "Play random :-)"
+msgid "Play random"
 msgstr ""
 
 msgctxt "#32101"
