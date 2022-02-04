@@ -3,6 +3,7 @@ import xbmcgui
 
 
 infokey_map = {
+    'title': 'title',
     'season': 'season',
     'episode': 'episode',
     'playcount': 'playcount',
@@ -21,8 +22,6 @@ mediatype_map = {'episodeid': 'episode',
 
 def build_video_listitem(item):
     result = xbmcgui.ListItem(item.get('label'))
-    if 'title' in item:
-        result.setLabel(item['title'])
     if 'label2' in item:
         result.setLabel2(item['label2'])
 
