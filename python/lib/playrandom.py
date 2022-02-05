@@ -4,7 +4,6 @@ from . import quickjson
 from .pykodi import get_main_addon, localize as L
 from .player import get_player
 from .generators import get_generator
-from datetime import datetime, timedelta
 
 SELECTWATCHMODE_HEADING = 32010
 WATCHMODE_ALLVIDEOS_TEXT = 16100
@@ -28,15 +27,6 @@ unplayed_filter = {'field': 'playcount', 'operator': 'is', 'value': '0'}
 played_filter = {'field': 'playcount', 'operator': 'greaterthan', 'value': '0'}
 noextras_filter = {'field': 'season', 'operator': 'isnot', 'value': '0'}
 
-# Don't play video that has been watched in the past x months
-#if content == "tvshows":
-#    months = int(get_main_addon().getSetting('tvplayedmonths'))
-#if content == "movies":
-#    months = int(get_main_addon().getSetting('movieplayedmonths'))
-#
-#today = datetime.today()
-#playbefore = (today - timedelta(30*months)).strftime('%Y-%m-%d') 
-#lastwatched_filter = {'field': 'lastplayed', 'operator': 'lessthan', 'value': playbefore}
 
 def play(pathinfo):
     content, info = _parse_path(pathinfo)
@@ -54,6 +44,16 @@ def play(pathinfo):
             xbmcgui.Dialog().ok(L(ADD_SOURCE_HEADER), L(ADD_SOURCE_MESSAGE).format(info['path']))
         else:
             raise
+
+def _build_watched_before_filter(content):
+    # Don't play video that has been watched in the past x months
+    if content == "tvshows":
+        months = int(get_main_addon().getSetting('tvplayedmonths'))
+    if content == "movies":
+        months = int(get_main_addon().getSetting('movieplayedmonths'))
+
+    lastwatched_filter = {'field': 'lastplayed', 'operator': 'notinthelast', 'value': months*30}
+    return lastwatched_fiter
 
 def _parse_path(pathinfo):
     content = None
@@ -137,18 +137,6 @@ def _parse_path(pathinfo):
         content = 'other'
         result['path'] = pathinfo['full path']
 
-
-    # Don't play video that has been watched in the past x months
-    if content == "tvshows":
-        months = int(get_main_addon().getSetting('tvplayedmonths'))
-    if content == "movies":
-        months = int(get_main_addon().getSetting('movieplayedmonths'))
-
-    today = datetime.today()
-    playbefore = (today - timedelta(30*months)).strftime('%Y-%m-%d') 
-    lastwatched_filter = {'field': 'lastplayed', 'operator': 'lessthan', 'value': playbefore}
-
-
     # DEPRECATED: forcewatchmode is deprecated in 1.1.0
     watchmode = _get_watchmode(pathinfo.get('watchmode') or pathinfo.get('forcewatchmode'), content)
     result['watchmode'] = watchmode
@@ -160,6 +148,7 @@ def _parse_path(pathinfo):
     elif watchmode == WATCHMODE_WATCHED:
         filters.append(played_filter)
     elif watchmode == WATCHMODE_WATCHEDBEFORE:
+        lastwatched_filter = _build_watched_before_fiter(content)
         filters.append(lastwatched_filter)
 
     if content == 'tvshows' and get_main_addon().getSetting('exclude_extras') == 'true':
