@@ -1,8 +1,15 @@
 import collections
 import xbmcgui
 
-# JSON keys that don't match info labels
+
 infokey_map = {
+    'title': 'title',
+    'season': 'season',
+    'episode': 'episode',
+    'playcount': 'playcount',
+    'rating': 'rating',
+    'userrating': 'userrating',
+    # JSON keys that don't match info labels
     'track': 'tracknumber',
     'runtime': 'duration',
     'showtitle': 'tvshowtitle',
