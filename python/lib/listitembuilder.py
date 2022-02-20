@@ -1,4 +1,5 @@
 import collections
+from collections import abc
 import xbmcgui
 
 
@@ -27,7 +28,7 @@ def build_video_listitem(item):
 
     infolabels = {}
     for key, value in item.items():
-        if isinstance(value, collections.Mapping):
+        if isinstance(value, abc.Mapping):
             continue
         if key in infokey_map:
             infolabels[infokey_map[key]] = value
