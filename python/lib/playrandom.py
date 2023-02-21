@@ -52,7 +52,10 @@ def _build_watched_before_filter(content):
     if content == "movies":
         months = int(get_main_addon().getSetting('movieplayedmonths'))
 
-    lastwatched_filter = {'field': 'lastplayed', 'operator': 'notinthelast', 'value': months*30}
+    # jsonrpc stopped playing nicely when combining 'notinthelast' with the other operators in our filter, so falling back to 'lessthan'
+    #lastwatched_filter = {'field': 'lastplayed', 'operator': 'notinthelast', 'value': months*30}
+    watchbeforedate = (datetime.now() - timedelta(days=months*30)).isoformat(' ')
+    lastwatched_filter = {'field': 'lastplayed', 'operator': 'lessthan', 'value': watchbeforedate}
     return lastwatched_filter
 
 def _parse_path(pathinfo):
