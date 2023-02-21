@@ -53,7 +53,7 @@ def _build_watched_before_filter(content):
         months = int(get_main_addon().getSetting('movieplayedmonths'))
 
     lastwatched_filter = {'field': 'lastplayed', 'operator': 'notinthelast', 'value': months*30}
-    return lastwatched_fiter
+    return lastwatched_filter
 
 def _parse_path(pathinfo):
     content = None
