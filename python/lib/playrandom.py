@@ -148,7 +148,7 @@ def _parse_path(pathinfo):
     elif watchmode == WATCHMODE_WATCHED:
         filters.append(played_filter)
     elif watchmode == WATCHMODE_WATCHEDBEFORE:
-        lastwatched_filter = _build_watched_before_fiter(content)
+        lastwatched_filter = _build_watched_before_filter(content)
         filters.append(lastwatched_filter)
 
     if content == 'tvshows' and get_main_addon().getSetting('exclude_extras') == 'true':
