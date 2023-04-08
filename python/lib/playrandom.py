@@ -52,8 +52,11 @@ def _build_watched_before_filter(content):
     if content == "movies":
         months = int(get_main_addon().getSetting('movieplayedmonths'))
 
-    lastwatched_filter = {'field': 'lastplayed', 'operator': 'notinthelast', 'value': months*30}
-    return lastwatched_fiter
+    # jsonrpc stopped playing nicely when combining 'notinthelast' with the other operators in our filter, so falling back to 'lessthan'
+    #lastwatched_filter = {'field': 'lastplayed', 'operator': 'notinthelast', 'value': months*30}
+    watchbeforedate = (datetime.now() - timedelta(days=months*30)).isoformat(' ')
+    lastwatched_filter = {'field': 'lastplayed', 'operator': 'lessthan', 'value': watchbeforedate}
+    return lastwatched_filter
 
 def _parse_path(pathinfo):
     content = None
@@ -148,7 +151,7 @@ def _parse_path(pathinfo):
     elif watchmode == WATCHMODE_WATCHED:
         filters.append(played_filter)
     elif watchmode == WATCHMODE_WATCHEDBEFORE:
-        lastwatched_filter = _build_watched_before_fiter(content)
+        lastwatched_filter = _build_watched_before_filter(content)
         filters.append(lastwatched_filter)
 
     if content == 'tvshows' and get_main_addon().getSetting('exclude_extras') == 'true':
