@@ -1,7 +1,8 @@
 import xbmcgui
+from datetime import timedelta
 
 from . import quickjson
-from .pykodi import get_main_addon, localize as L
+from .pykodi import datetime_now, get_main_addon, localize as L
 from .player import get_player
 from .generators import get_generator
 
@@ -54,7 +55,7 @@ def _build_watched_before_filter(content):
 
     # jsonrpc stopped playing nicely when combining 'notinthelast' with the other operators in our filter, so falling back to 'lessthan'
     #lastwatched_filter = {'field': 'lastplayed', 'operator': 'notinthelast', 'value': months*30}
-    watchbeforedate = (datetime.now() - timedelta(days=months*30)).isoformat(' ')
+    watchbeforedate = (datetime_now() - timedelta(days=months*30)).isoformat(' ')
     lastwatched_filter = {'field': 'lastplayed', 'operator': 'lessthan', 'value': watchbeforedate}
     return lastwatched_filter
 
